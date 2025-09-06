@@ -1,0 +1,76 @@
+# Gitignore for Arch Linux Installation Project
+
+# Test results and temporary files
+Tests/test_results/
+*.log
+*.tmp
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary installation files
+archlinux-*.iso
+*.img
+*.qcow2
+
+# UTM VM files
+*.utm/
+
+# Personal configuration files (if any)
+personal_config.sh
+user_settings.conf
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Logs
+*.log
+logs/
+
+# Private keys or sensitive data
+*.key
+*.pem
+secrets/
+private/

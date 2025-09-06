@@ -63,6 +63,8 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/my_arch_
 ### **📖 Manual Installation**
 Follow the comprehensive guide in `Docs/My_Instructions.md` for complete control over every step.
 
+**Note:** `Docs/Instructions.md` contains original Level1Techs research but is deprecated. Use `My_Instructions.md` for current installation.
+
 ---
 
 ## **Hardware Compatibility Status**
@@ -137,8 +139,9 @@ Asus-Z13-Flow-2025-PCMR/
 │   └── unit_tests.sh (individual component tests)
 └── Docs/
     ├── My_Instructions.md (complete installation guide)
-    ├── Instructions.md (original reference)
-    └── Flowchart.md (visual installation process)
+    ├── Instructions.md (original reference - deprecated)
+    ├── Flowchart.md (visual installation process)
+    └── XFCE_Newbie_Guide.md (Windows/Mac user transition guide)
 ```
 
 ---
@@ -151,6 +154,7 @@ Asus-Z13-Flow-2025-PCMR/
 3. **🔧 Partition:** Shrink Windows partition (100GB+ for Linux)
 4. **🚀 Install:** Boot Arch USB and run automated script
 5. **✅ Verify:** Test dual-boot functionality
+6. **🖥️ Learn XFCE:** Read `Docs/XFCE_Newbie_Guide.md` for desktop orientation
 
 ### **For Experienced Users:**
 1. Boot Arch Linux USB
@@ -193,6 +197,9 @@ This project builds directly on the excellent foundation work shared in the Leve
 - **Level1Techs Forum:** Community discussion and support
 - **Arch Wiki:** Comprehensive Linux documentation
 - **Documentation:** Complete guides in `Docs/` directory
+  - `My_Instructions.md` - Current installation guide
+  - `XFCE_Newbie_Guide.md` - Desktop environment tutorial
+  - `Instructions.md` - Original reference (deprecated)
 
 ---
 

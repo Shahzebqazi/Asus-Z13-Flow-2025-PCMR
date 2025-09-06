@@ -51,7 +51,7 @@ This project significantly enhances and modernizes the original Level1Techs comm
 ### **🤖 Automated Installation (Recommended)**
 ```bash
 # Boot from Arch Linux USB and run:
-curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/my_arch_install.sh | bash
+curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.sh | bash
 ```
 
 **Features:**
@@ -132,7 +132,7 @@ python3 test_installation.py
 ```
 Asus-Z13-Flow-2025-PCMR/
 ├── README.md (this file)
-├── my_arch_install.sh (automated installation script)
+├── Install.sh (automated installation script)
 ├── Tests/
 │   ├── test_installation.py (Python test suite)
 │   ├── utm_test_runner.sh (UTM integration tests)
@@ -158,7 +158,7 @@ Asus-Z13-Flow-2025-PCMR/
 
 ### **For Experienced Users:**
 1. Boot Arch Linux USB
-2. Run: `curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/my_arch_install.sh | bash`
+2. Run: `curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.sh | bash`
 3. Follow interactive prompts
 4. Enjoy your optimized Z13 Linux system!
 

@@ -21,7 +21,7 @@ graph TD
     G --> H[💿 Boot Arch Linux USB]
     
     H --> I{Choose Installation Method}
-    I -->|🤖 Automated| J[Run curl command<br/>../my_arch_install.sh]
+    I -->|🤖 Automated| J[Run curl command<br/>../Install.sh]
     I -->|📋 Manual| K[Follow Docs/My_Instructions.md]
     
     J --> L[⚙️ Configure Options]
@@ -29,14 +29,16 @@ graph TD
     
     L --> M[Desktop Environment?]
     M --> M1[i3 - Tiling WM]
-    M --> M2[GNOME - Full DE]
-    M --> M3[KDE - Feature Rich]
-    M --> M4[Minimal - No GUI]
+    M --> M2[XFCE - User Friendly (Default)]
+    M --> M3[GNOME - Full DE]
+    M --> M4[KDE - Feature Rich]
+    M --> M5[Minimal - No GUI]
     
     M1 --> N
     M2 --> N
     M3 --> N
     M4 --> N
+    M5 --> N
     
     N[🎮 Gaming Setup?]
     N -->|Yes| N1[Install Steam + Proton]

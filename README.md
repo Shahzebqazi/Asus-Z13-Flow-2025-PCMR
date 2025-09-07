@@ -157,7 +157,7 @@ Asus-Z13-Flow-2025-PCMR/
 6. **🖥️ Learn XFCE:** Read `Docs/XFCE_Newbie_Guide.md` for desktop orientation
 
 ### **For Experienced Users:**
-1. Boot Arch Linux USB
+1. Boot Arch Linux USB (use Rufus to make the USB)
 2. Run: `curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.sh | bash`
 3. Follow interactive prompts
 4. Enjoy your optimized Z13 Linux system!
@@ -220,7 +220,7 @@ This project builds directly on the excellent foundation work shared in the Leve
 
 ## **Changelog & Version History**
 
-### **Version 1.0.0 (January 2025)**
+### **Version 1.0.0 (September 2025)**
 - **Initial release** with comprehensive Z13 support
 - **ZFS file system** implementation
 - **XFCE desktop environment** as default
@@ -261,4 +261,4 @@ This project welcomes contributions from the Level1Techs community and beyond. W
 
 **Get started:** https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR
 
-*This project represents hundreds of hours of development, testing, and documentation to provide the Level1Techs community with a production-ready Arch Linux installation for the Z13. Enjoy your new Linux system!* 🐧✨
+*This project represents hours of development, testing, and documentation to provide the Level1Techs community with a production-ready Arch Linux installation for the Z13. Enjoy your new Linux system!* 🐧✨

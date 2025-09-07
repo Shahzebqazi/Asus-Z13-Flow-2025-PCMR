@@ -206,11 +206,7 @@ This project builds directly on the excellent foundation work shared in the Leve
 ## **Technical Specifications**
 
 ### **Supported Z13 Models:**
-- ASUS ROG Flow Z13 (2022-2025 models)
-- AMD Ryzen 9 7940HS processor
-- AMD Radeon 780M integrated graphics
-- MediaTek MT7925e Wi-Fi (with stability fixes)
-- 13.4" touchscreen display
+- ASUS ROG Flow Z13 (2025 models)
 
 ### **Software Stack:**
 - **OS:** Arch Linux (rolling release)

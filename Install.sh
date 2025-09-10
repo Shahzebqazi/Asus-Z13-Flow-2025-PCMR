@@ -576,7 +576,7 @@ systemctl enable tlp
 
 # Configure TLP for maximum performance when plugged in
 cat >> /etc/tlp.conf << EOH
-# Z13 Power Management Configuration
+# Z13 Power Management Configuration - AMD Ryzen Strix Halo (45W-120W+ TDP)
 TLP_DEFAULT_MODE=AC
 CPU_SCALING_GOVERNOR_ON_AC=performance
 CPU_SCALING_GOVERNOR_ON_BAT=powersave
@@ -588,6 +588,11 @@ CPU_MIN_PERF_ON_BAT=0
 CPU_MAX_PERF_ON_BAT=30
 PLATFORM_PROFILE_ON_AC=performance
 PLATFORM_PROFILE_ON_BAT=low-power
+
+# Strix Halo TDP Control (via asusctl)
+# Performance: 120W+ TDP (gaming, rendering)
+# Balanced: 70W TDP (general use)
+# Power-saver: 45W TDP (battery life)
 EOH
 
 EOF
@@ -764,7 +769,7 @@ cleanup_and_finish() {
     print_status ""
     print_status "System optimized for:"
     print_status "• Maximum performance when plugged in"
-    print_status "• Efficient power management (7W-54W+ TDP control)"
+    print_status "• Advanced power management (7W-120W+ TDP control)"
     print_status "• Hassle-free laptop and tablet use"
     print_status ""
     print_status "Next steps:"

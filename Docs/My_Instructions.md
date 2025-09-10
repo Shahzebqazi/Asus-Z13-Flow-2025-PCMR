@@ -4,7 +4,7 @@
 This comprehensive guide covers the complete process of installing Arch Linux on the ASUS ROG Flow Z13, from Windows preparation through final system configuration. The installation prioritizes:
 - **Maximum performance when plugged in**
 - **Hassle-free laptop and tablet use**
-- **Efficient power management and optimum battery life**
+- **Advanced power management with AMD Strix Halo TDP control (45W-120W+)**
 - **Dual-boot compatibility with Windows**
 
 ---
@@ -584,9 +584,9 @@ nmcli device wifi connect "YOUR_SSID" password "YOUR_PASSWORD"
 powerprofilesctl list
 
 # Test power profile switching
-powerprofilesctl set performance  # Maximum performance
-powerprofilesctl set balanced     # Balanced mode
-powerprofilesctl set power-saver  # Battery saving (7W mode)
+powerprofilesctl set performance  # Maximum performance (120W+ TDP)
+powerprofilesctl set balanced     # Balanced mode (70W TDP)
+powerprofilesctl set power-saver  # Battery saving (45W TDP)
 
 # Check ASUS control
 asusctl profile -l
@@ -636,8 +636,8 @@ zfs list -t snapshot
 - **Screen flickering:** Verify `i915.enable_psr=0` in GRUB configuration
 
 #### Performance Issues
-- **Poor battery life:** Switch to power-saver profile: `powerprofilesctl set power-saver`
-- **Low performance on AC:** Switch to performance profile: `powerprofilesctl set performance`
+- **Poor battery life:** Switch to power-saver profile: `powerprofilesctl set power-saver` (45W TDP)
+- **Low performance on AC:** Switch to performance profile: `powerprofilesctl set performance` (120W+ TDP)
 
 ## Security Considerations
 

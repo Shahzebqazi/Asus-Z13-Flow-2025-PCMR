@@ -22,7 +22,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.
 - **Touchpad** - Full functionality with touch support
 - **Display** - No flickering, optimized for Z13
 - **Audio** - Complete audio setup
-- **Power Management** - 7W to 54W+ TDP control
+- **Power Management** - 7W to 120W+ TDP control
 - **Gaming** - Steam, Proton, GameMode ready
 
 ### **⚡ Performance Features**
@@ -73,7 +73,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.
 | **Touchpad** | ✅ Working | Full touch support |
 | **Display** | ✅ Working | No flickering issues |
 | **Audio** | ✅ Working | PulseAudio configured |
-| **Power** | ✅ Working | 7W-54W+ TDP control |
+| **Power** | ✅ Working | 7W-120W+ TDP control |
 | **Gaming** | ✅ Working | Steam + Proton ready |
 
 ---

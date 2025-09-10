@@ -74,20 +74,22 @@ configure_installation() {
     # Desktop environment
     echo ""
     echo "Desktop Environment Options:"
-    echo "1) XFCE (Lightweight, user-friendly - recommended for new users)"
-    echo "2) i3 (Tiling window manager - advanced users)"
-    echo "3) GNOME (Modern desktop environment)"
-    echo "4) KDE Plasma (Feature-rich desktop)"
-    echo "5) Minimal (No desktop environment)"
-    read -p "Choose desktop environment (1-5): " desktop_choice
+    echo "1) Omarchy (Tiling window manager - default)"
+    # echo "2) XFCE (Lightweight, user-friendly - recommended for new users)"
+    # echo "3) i3 (Tiling window manager - advanced users)"
+    # echo "4) GNOME (Modern desktop environment)"
+    # echo "5) KDE Plasma (Feature-rich desktop)"
+    # echo "6) Minimal (No desktop environment)"
+    read -p "Choose desktop environment (1): " desktop_choice
     
     case $desktop_choice in
-        1) INSTALL_DESKTOP="xfce" ;;
-        2) INSTALL_DESKTOP="i3" ;;
-        3) INSTALL_DESKTOP="gnome" ;;
-        4) INSTALL_DESKTOP="kde" ;;
-        5) INSTALL_DESKTOP="minimal" ;;
-        *) INSTALL_DESKTOP="xfce" ;;
+        1) INSTALL_DESKTOP="omarchy" ;;
+        # 2) INSTALL_DESKTOP="xfce" ;;
+        # 3) INSTALL_DESKTOP="i3" ;;
+        # 4) INSTALL_DESKTOP="gnome" ;;
+        # 5) INSTALL_DESKTOP="kde" ;;
+        # 6) INSTALL_DESKTOP="minimal" ;;
+        *) INSTALL_DESKTOP="omarchy" ;;
     esac
     
     # Gaming setup
@@ -463,39 +465,61 @@ install_desktop() {
     print_header "Installing Desktop Environment: $INSTALL_DESKTOP"
     
     case $INSTALL_DESKTOP in
-        "xfce")
-            arch-chroot /mnt /bin/bash << 'EOF'
-pacman -S --noconfirm xfce4 xfce4-goodies xorg-server
-pacman -S --noconfirm lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
-pacman -S --noconfirm firefox thunar-archive-plugin file-roller
-pacman -S --noconfirm pulseaudio pulseaudio-alsa pavucontrol
-pacman -S --noconfirm network-manager-applet
-systemctl enable lightdm
-EOF
-            ;;
-        "i3")
-            arch-chroot /mnt /bin/bash << 'EOF'
-pacman -S --noconfirm xorg-server xorg-xinit i3-wm i3status i3lock dmenu
+        "omarchy")
+            arch-chroot /mnt /bin/bash << EOF
+# Install Omarchy tiling window manager
+pacman -S --noconfirm xorg-server xorg-xinit
 pacman -S --noconfirm lightdm lightdm-gtk-greeter
 pacman -S --noconfirm firefox alacritty thunar
+pacman -S --noconfirm pulseaudio pulseaudio-alsa pavucontrol
+pacman -S --noconfirm network-manager-applet
+
+# Install Omarchy from AUR
+pacman -S --noconfirm --needed git base-devel
+cd /tmp
+sudo -u $USERNAME git clone https://aur.archlinux.org/yay.git
+cd yay
+sudo -u $USERNAME makepkg -si --noconfirm
+cd /
+sudo -u $USERNAME yay -S --noconfirm omarchy
+
+# Enable display manager
 systemctl enable lightdm
 EOF
             ;;
-        "gnome")
-            arch-chroot /mnt /bin/bash << 'EOF'
-pacman -S --noconfirm gnome gnome-extra
-systemctl enable gdm
-EOF
-            ;;
-        "kde")
-            arch-chroot /mnt /bin/bash << 'EOF'
-pacman -S --noconfirm plasma kde-applications
-systemctl enable sddm
-EOF
-            ;;
-        "minimal")
-            print_status "Minimal installation - no desktop environment."
-            ;;
+        # "xfce")
+        #     arch-chroot /mnt /bin/bash << 'EOF'
+        # pacman -S --noconfirm xfce4 xfce4-goodies xorg-server
+        # pacman -S --noconfirm lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
+        # pacman -S --noconfirm firefox thunar-archive-plugin file-roller
+        # pacman -S --noconfirm pulseaudio pulseaudio-alsa pavucontrol
+        # pacman -S --noconfirm network-manager-applet
+        # systemctl enable lightdm
+        # EOF
+        #     ;;
+        # "i3")
+        #     arch-chroot /mnt /bin/bash << 'EOF'
+        # pacman -S --noconfirm xorg-server xorg-xinit i3-wm i3status i3lock dmenu
+        # pacman -S --noconfirm lightdm lightdm-gtk-greeter
+        # pacman -S --noconfirm firefox alacritty thunar
+        # systemctl enable lightdm
+        # EOF
+        #     ;;
+        # "gnome")
+        #     arch-chroot /mnt /bin/bash << 'EOF'
+        # pacman -S --noconfirm gnome gnome-extra
+        # systemctl enable gdm
+        # EOF
+        #     ;;
+        # "kde")
+        #     arch-chroot /mnt /bin/bash << 'EOF'
+        # pacman -S --noconfirm plasma kde-applications
+        # systemctl enable sddm
+        # EOF
+        #     ;;
+        # "minimal")
+        #     print_status "Minimal installation - no desktop environment."
+        #     ;;
     esac
     
     print_status "Desktop environment installation completed."

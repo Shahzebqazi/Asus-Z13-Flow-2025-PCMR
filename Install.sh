@@ -428,7 +428,7 @@ install_base_system() {
     
     # Install essential packages
     print_status "Installing essential packages..."
-    if ! pacstrap /mnt vim nano networkmanager git wget curl intel-ucode amd-ucode; then
+    if ! pacstrap /mnt vim nano networkmanager git wget curl intel-ucode amd-ucode zsh; then
         print_error "Failed to install essential packages."
         exit 1
     fi
@@ -485,7 +485,7 @@ configure_system() {
     genfstab -U /mnt >> /mnt/etc/fstab
     
     # Chroot and configure
-    arch-chroot /mnt /bin/bash << EOF
+    arch-chroot /mnt /bin/zsh << EOF
 # Set timezone
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
@@ -517,8 +517,8 @@ sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& i915.enable_psr=0 ibt=off/' /etc/d
 grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --recheck
 grub-mkconfig -o /boot/grub/grub.cfg
 
-# Create user
-useradd -m -G wheel -s /bin/bash $USERNAME
+# Create user with zsh as default shell
+useradd -m -G wheel -s /bin/zsh $USERNAME
 
 # Enable sudo for wheel group
 sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
@@ -537,7 +537,7 @@ EOF
 apply_z13_fixes() {
     print_header "Applying ASUS ROG Flow Z13 Hardware Fixes"
     
-    arch-chroot /mnt /bin/bash << 'EOF'
+    arch-chroot /mnt /bin/zsh << 'EOF'
 # Fix Wi-Fi stability (MediaTek MT7925e)
 mkdir -p /etc/modprobe.d
 echo "options mt7925e disable_aspm=1" > /etc/modprobe.d/mt7925e.conf
@@ -569,7 +569,7 @@ install_power_management() {
     if [[ $INSTALL_POWER_MGMT == "y" ]]; then
         print_header "Installing Power Management"
         
-        arch-chroot /mnt /bin/bash << EOF
+        arch-chroot /mnt /bin/zsh << EOF
 # Install AUR helper first
 pacman -S --noconfirm --needed git base-devel
 cd /tmp
@@ -619,7 +619,7 @@ install_desktop() {
     
     case $INSTALL_DESKTOP in
         "omarchy")
-            arch-chroot /mnt /bin/bash << EOF
+            arch-chroot /mnt /bin/zsh << EOF
 # Install Omarchy tiling window manager
 pacman -S --noconfirm xorg-server xorg-xinit
 pacman -S --noconfirm lightdm lightdm-gtk-greeter
@@ -641,7 +641,7 @@ systemctl enable lightdm
 EOF
             ;;
         "xfce")
-            arch-chroot /mnt /bin/bash << EOF
+            arch-chroot /mnt /bin/zsh << EOF
 # Install XFCE desktop environment
 pacman -S --noconfirm xfce4 xfce4-goodies xorg-server
 pacman -S --noconfirm lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
@@ -654,7 +654,7 @@ systemctl enable lightdm
 EOF
             ;;
         "i3")
-            arch-chroot /mnt /bin/bash << 'EOF'
+            arch-chroot /mnt /bin/zsh << 'EOF'
 pacman -S --noconfirm xorg-server xorg-xinit i3-wm i3status i3lock dmenu
 pacman -S --noconfirm lightdm lightdm-gtk-greeter
 pacman -S --noconfirm firefox alacritty thunar
@@ -664,14 +664,14 @@ systemctl enable lightdm
 EOF
             ;;
         "gnome")
-            arch-chroot /mnt /bin/bash << 'EOF'
+            arch-chroot /mnt /bin/zsh << 'EOF'
 pacman -S --noconfirm gnome gnome-extra
 pacman -S --noconfirm firefox
 systemctl enable gdm
 EOF
             ;;
         "kde")
-            arch-chroot /mnt /bin/bash << 'EOF'
+            arch-chroot /mnt /bin/zsh << 'EOF'
 pacman -S --noconfirm plasma kde-applications
 pacman -S --noconfirm firefox
 systemctl enable sddm
@@ -690,7 +690,7 @@ install_gaming() {
     if [[ $INSTALL_GAMING == "y" ]]; then
         print_header "Installing Gaming Setup"
         
-        arch-chroot /mnt /bin/bash << 'EOF'
+        arch-chroot /mnt /bin/zsh << 'EOF'
 # Enable multilib repository
 sed -i '/\[multilib\]/,/Include/s/^#//' /etc/pacman.conf
 pacman -Sy
@@ -713,7 +713,7 @@ configure_snapshots() {
     if [[ $ENABLE_SNAPSHOTS == "y" ]]; then
         print_header "Configuring ZFS Snapshots"
         
-        arch-chroot /mnt /bin/bash << 'EOF'
+        arch-chroot /mnt /bin/zsh << 'EOF'
 # Configure ZFS snapshots (already configured in setup_zfs function)
 # ZFS snapshots are automatically managed by zfs-auto-snapshot
 
@@ -745,7 +745,7 @@ set_passwords() {
 final_update() {
     print_header "Final System Update"
     
-    arch-chroot /mnt /bin/bash << 'EOF'
+    arch-chroot /mnt /bin/zsh << 'EOF'
 pacman -Syu --noconfirm
 EOF
 

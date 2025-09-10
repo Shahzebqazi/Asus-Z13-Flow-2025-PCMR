@@ -29,6 +29,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.
 - **ZFS File System** - Compression, snapshots, data integrity
 - **Omarchy Desktop** - Tiling window manager (default)
 - **Zen Kernel** - Desktop-optimized for low latency and gaming
+- **Zsh Shell** - Modern shell with better autocompletion
 - **Fast Boot** - 5-6 seconds to desktop
 - **Dual-Boot** - Preserves Windows safely
 - **Advanced Cooling** - Optimized for high TDP workloads
@@ -67,6 +68,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.
 - **Hardware Fixes** - All Z13-specific optimizations
 - **AUR Support** - yay helper for additional packages
 - **Zen Kernel** - Low latency, desktop-optimized performance
+- **Zsh Shell** - Modern shell with advanced features
 
 ---
 

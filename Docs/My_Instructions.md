@@ -6,6 +6,7 @@ This comprehensive guide covers the complete process of installing Arch Linux on
 - **Hassle-free laptop and tablet use**
 - **Advanced power management with AMD Strix Halo TDP control (45W-120W+)**
 - **Zen kernel for desktop performance and low latency**
+- **Zsh shell for modern command-line experience**
 - **Dual-boot compatibility with Windows**
 
 ---
@@ -344,7 +345,7 @@ pacstrap /mnt base linux-zen linux-firmware base-devel
 # pacstrap /mnt base linux linux-firmware base-devel
 
 # Install additional essential packages for Z13
-pacstrap /mnt vim nano networkmanager git wget curl intel-ucode amd-ucode
+pacstrap /mnt vim nano networkmanager git wget curl intel-ucode amd-ucode zsh
 pacstrap /mnt grub efibootmgr os-prober
 
 # Install ZFS support
@@ -414,7 +415,7 @@ grub-mkconfig -o /boot/grub/grub.cfg
 passwd
 
 # Create user account
-useradd -m -G wheel -s /bin/bash sqazi
+useradd -m -G wheel -s /bin/zsh sqazi
 passwd sqazi
 
 # Enable sudo for wheel group

@@ -102,7 +102,7 @@ configure_installation() {
     
     # Snapshots
     echo ""
-    read -p "Enable Btrfs snapshots for system recovery? (y/n): " ENABLE_SNAPSHOTS
+    read -p "Enable ZFS snapshots for system recovery? (y/n): " ENABLE_SNAPSHOTS
     
     # Confirmation
     echo ""
@@ -421,7 +421,7 @@ install_power_management() {
     if [[ $INSTALL_POWER_MGMT == "y" ]]; then
         print_header "Installing Power Management"
         
-        arch-chroot /mnt /bin/bash << 'EOF'
+        arch-chroot /mnt /bin/bash << EOF
 # Install AUR helper first
 pacman -S --noconfirm --needed git base-devel
 cd /tmp
@@ -551,16 +551,18 @@ EOF
 # Function to configure snapshots
 configure_snapshots() {
     if [[ $ENABLE_SNAPSHOTS == "y" ]]; then
-        print_header "Configuring Btrfs Snapshots"
+        print_header "Configuring ZFS Snapshots"
         
         arch-chroot /mnt /bin/bash << 'EOF'
-# Configure snapper
-snapper -c root create-config /
-snapper -c home create-config /home
+# Configure ZFS snapshots (already configured in setup_zfs function)
+# ZFS snapshots are automatically managed by zfs-auto-snapshot
 
 # Enable automatic snapshots
-systemctl enable snapper-timeline.timer
-systemctl enable snapper-cleanup.timer
+systemctl enable zfs-snapshot-boot.timer
+systemctl enable zfs-snapshot-hourly.timer
+systemctl enable zfs-snapshot-daily.timer
+systemctl enable zfs-snapshot-weekly.timer
+systemctl enable zfs-snapshot-monthly.timer
 
 EOF
 

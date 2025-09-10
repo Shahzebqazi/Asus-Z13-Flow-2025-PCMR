@@ -342,19 +342,24 @@ format_partitions() {
 setup_zfs() {
     print_header "Setting up ZFS"
     
-    # Check available disk space for ZFS
+    # Check available disk space for ZFS (fixed - check actual root partition)
     print_status "Checking disk space for ZFS installation..."
-    local available_space=$(df /mnt 2>/dev/null | awk 'NR==2 {print $4}' || echo "0")
-    local required_space=2097152  # 2GB minimum for ZFS
-    
-    if [[ $available_space -lt $required_space ]]; then
-        print_error "Insufficient disk space for ZFS installation."
-        print_error "Available: $(($available_space / 1024))MB, Required: $(($required_space / 1024))MB"
-        print_warning "Consider:"
-        print_warning "1. Free up more space on the target disk"
-        print_warning "2. Use a different file system (ext4)"
-        print_warning "3. Shrink Windows partition further"
-        exit 1
+    local root_partition=$(mount | grep "on /mnt " | awk '{print $1}' | head -1)
+    if [[ -n "$root_partition" ]]; then
+        local available_space=$(lsblk -b "$root_partition" | awk 'NR==2 {print $4}' | awk '{print int($1/1024/1024)}')
+        local required_space=2048  # 2GB minimum for ZFS
+        
+        if [[ $available_space -lt $required_space ]]; then
+            print_error "Insufficient disk space for ZFS installation."
+            print_error "Available: ${available_space}MB, Required: ${required_space}MB"
+            print_warning "Consider:"
+            print_warning "1. Free up more space on the target disk"
+            print_warning "2. Use a different file system (ext4)"
+            print_warning "3. Shrink Windows partition further"
+            exit 1
+        fi
+    else
+        print_warning "Could not determine root partition size, proceeding with ZFS setup..."
     fi
     
     print_status "Disk space check passed: $(($available_space / 1024))MB available"

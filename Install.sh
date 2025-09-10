@@ -413,12 +413,18 @@ install_base_system() {
         exit 1
     fi
     
-    # Install base system
-    print_status "Installing base packages (this may take 5-10 minutes)..."
-    if ! pacstrap /mnt base linux linux-firmware base-devel; then
+    # Install base system with Zen kernel (desktop-optimized)
+    print_status "Installing base packages with Zen kernel (this may take 5-10 minutes)..."
+    if ! pacstrap /mnt base linux-zen linux-firmware base-devel; then
         print_error "Failed to install base packages. Check disk space and internet connection."
         exit 1
     fi
+    
+    # Standard kernel (commented out - using Zen kernel for better desktop performance)
+    # if ! pacstrap /mnt base linux linux-firmware base-devel; then
+    #     print_error "Failed to install base packages. Check disk space and internet connection."
+    #     exit 1
+    # fi
     
     # Install essential packages
     print_status "Installing essential packages..."
@@ -434,10 +440,16 @@ install_base_system() {
     
     # Install hardware-specific packages
     print_status "Installing hardware-specific packages..."
-    if ! pacstrap /mnt mesa xf86-video-amdgpu linux-headers; then
+    if ! pacstrap /mnt mesa xf86-video-amdgpu linux-zen-headers; then
         print_error "Failed to install hardware packages."
         exit 1
     fi
+    
+    # Standard kernel headers (commented out - using Zen kernel headers)
+    # if ! pacstrap /mnt mesa xf86-video-amdgpu linux-headers; then
+    #     print_error "Failed to install hardware packages."
+    #     exit 1
+    # fi
     
     # Install ZFS support
     print_status "Installing ZFS packages (this may take 5-15 minutes)..."
@@ -770,6 +782,7 @@ cleanup_and_finish() {
     print_status "System optimized for:"
     print_status "• Maximum performance when plugged in"
     print_status "• Advanced power management (7W-120W+ TDP control)"
+    print_status "• Zen kernel for desktop performance and low latency"
     print_status "• Hassle-free laptop and tablet use"
     print_status ""
     print_status "Next steps:"
@@ -777,6 +790,7 @@ cleanup_and_finish() {
     print_status "2. Reboot into your new Arch Linux system"
     print_status "3. Test dual-boot functionality (if enabled)"
     print_status "4. Configure power profiles using: powerprofilesctl set [performance|balanced|power-saver]"
+    print_status "5. Zen kernel provides better desktop performance and gaming responsiveness"
     print_status ""
     
     read -p "Reboot now? (y/n): " reboot_now

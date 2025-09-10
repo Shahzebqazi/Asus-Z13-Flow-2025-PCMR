@@ -41,6 +41,7 @@ This repository has been enhanced specifically for the ASUS ROG Flow Z13 with th
 
 * **ZFS File System** - Superior to Btrfs for compression and snapshots
 * **Omarchy Desktop** - Modern tiling window manager (default)
+* **Zen Kernel** - Desktop-optimized for low latency and gaming performance
 * **Advanced Power Management** - AMD Strix Halo TDP control (45W-120W+)
 * **Hardware-Specific Fixes** - Wi-Fi, touchpad, display optimizations
 * **Automated Installation** - One-command setup with `Install.sh`
@@ -245,6 +246,7 @@ From the Level1Techs forum discussion:
 ### **Key Improvements Over Original:**
 - **ZFS instead of Btrfs** - Better compression and snapshots
 - **Omarchy desktop** - Modern tiling window manager
+- **Zen kernel** - Desktop-optimized for better performance and gaming
 - **AMD Strix Halo optimization** - Proper TDP control (45W-120W+)
 - **Automated installation** - One-command setup
 - **Comprehensive testing** - Production-ready quality

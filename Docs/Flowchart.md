@@ -56,17 +56,19 @@ graph TD
     P -->|No| Q
     P1 --> Q
     
-    Q[🔧 Install Arch Linux]
+    Q[🔧 Install Arch Linux<br/>with Zen Kernel]
     Q --> R[Apply Z13 Hardware Fixes]
     R --> R1[Wi-Fi Stability Fix<br/>MediaTek MT7925e]
     R --> R2[Touchpad Detection<br/>hid_asus driver]
     R --> R3[Screen Flicker Fix<br/>Intel PSR disabled]
     R --> R4[Power Management<br/>asusctl + TLP]
+    R --> R5[Zen Kernel Benefits<br/>Low latency + Gaming]
     
     R1 --> S
     R2 --> S
     R3 --> S
     R4 --> S
+    R5 --> S
     
     S[🔄 Test Dual-Boot]
     S --> T{Boot Test Results}

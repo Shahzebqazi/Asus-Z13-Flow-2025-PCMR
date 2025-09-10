@@ -5,6 +5,7 @@ This comprehensive guide covers the complete process of installing Arch Linux on
 - **Maximum performance when plugged in**
 - **Hassle-free laptop and tablet use**
 - **Advanced power management with AMD Strix Halo TDP control (45W-120W+)**
+- **Zen kernel for desktop performance and low latency**
 - **Dual-boot compatibility with Windows**
 
 ---
@@ -337,7 +338,10 @@ mount /dev/nvme0n1p1 /mnt/boot
 pacman -Sy
 
 # Install base system with essential packages
-pacstrap /mnt base linux linux-firmware base-devel
+pacstrap /mnt base linux-zen linux-firmware base-devel
+
+# Standard kernel (commented out - using Zen kernel for better performance)
+# pacstrap /mnt base linux linux-firmware base-devel
 
 # Install additional essential packages for Z13
 pacstrap /mnt vim nano networkmanager git wget curl intel-ucode amd-ucode
@@ -347,7 +351,10 @@ pacstrap /mnt grub efibootmgr os-prober
 pacstrap /mnt zfs-dkms zfs-utils
 
 # Install hardware-specific packages
-pacstrap /mnt mesa xf86-video-amdgpu linux-headers dkms
+pacstrap /mnt mesa xf86-video-amdgpu linux-zen-headers
+
+# Standard kernel headers (commented out - using Zen kernel headers)
+# pacstrap /mnt mesa xf86-video-amdgpu linux-headers dkms
 ```
 
 #### 10. Generate Filesystem Table
@@ -650,6 +657,7 @@ This installation has been thoroughly tested with:
 - **Power management** - TDP control testing (45W-120W+)
 - **Desktop environments** - All 6 options tested
 - **Error handling** - Comprehensive error recovery
+- **Zen kernel** - Desktop-optimized performance validation
 
 ### **Production-Ready Quality**
 - **Input validation** - All user inputs validated
@@ -657,6 +665,7 @@ This installation has been thoroughly tested with:
 - **Rollback capability** - ZFS pool destruction on failure
 - **Progress indicators** - Clear status messages
 - **Safety checks** - Disk space and hardware validation
+- **Zen kernel optimization** - Low latency, desktop performance
 
 ---
 

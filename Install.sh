@@ -3,7 +3,7 @@
 # my_arch_install.sh - Configurable Arch Linux Installation Script for ASUS ROG Flow Z13
 # Author: sqazi
 # Version: 1.0.0
-# Date: September 5, 2025
+# Date: September 10, 2025
 
 set -e  # Exit on any error
 
@@ -783,7 +783,7 @@ cleanup_and_finish() {
 # Main installation function
 main() {
     print_header "ASUS ROG Flow Z13 Arch Linux Installation Script"
-    print_status "Version 1.0.0 - September 5, 2025"
+    print_status "Version 1.0.0 - September 10, 2025"
     print_status ""
     
     # Set up error handling

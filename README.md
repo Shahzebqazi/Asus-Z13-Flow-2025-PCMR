@@ -222,7 +222,7 @@ This project builds directly on the excellent foundation work shared in the Leve
 
 ## **Changelog & Version History**
 
-### **Version 1.0.0 (September 2025)**
+### **Version 1.0.0 (September 10, 2025)**
 - **Initial release** with comprehensive Z13 support
 - **ZFS file system** implementation
 - **XFCE desktop environment** as default

@@ -2,7 +2,7 @@
 # Unit Tests for Arch Linux Installation Script Components
 # Author: sqazi
 # Version: 1.0.0
-# Date: January 2025
+# Date: September 10, 2025
 
 set -e
 

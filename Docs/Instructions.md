@@ -2,13 +2,9 @@
 
 **Source:** [Level1Techs Forum - The Ultimate Arch + Secureboot guide for Ryzen AI Max](https://forum.level1techs.com/t/the-ultimate-arch-secureboot-guide-for-ryzen-ai-max-ft-hp-g1a-128gb-8060s-monster-laptop/230652)
 
-**Author:** Wendell (Level1Techs) - Original Guide  
+**Author:** Wendell (Level1Techs)  
 **Date:** May 14, 2025  
 **Target Hardware:** HP G1A laptop (Ryzen AI MAX 395+)
-
-**Enhanced by:** sqazi  
-**Date:** September 10, 2025  
-**Target Hardware:** ASUS ROG Flow Z13 (AMD Ryzen Strix Halo)
 
 ---
 
@@ -32,20 +28,6 @@ TLP and power management? Flawless.
 And Fingerprint Reader?!?!? Also flawless.
 
 This is a first class Linux laptop. The weakest point is the Mediatek Wifi, but as of 5/10/2025 this guide will walk you through what you need for the Mediatek Wifi to work properly even in Wifi 7 scenarios.
-
----
-
-## **Enhanced for ASUS ROG Flow Z13**
-
-This repository has been enhanced specifically for the ASUS ROG Flow Z13 with the AMD Ryzen Strix Halo APU, featuring:
-
-* **ZFS File System** - Superior to Btrfs for compression and snapshots
-* **Omarchy Desktop** - Modern tiling window manager (default)
-* **Zen Kernel** - Desktop-optimized for low latency and gaming performance
-* **Advanced Power Management** - AMD Strix Halo TDP control (45W-120W+)
-* **Hardware-Specific Fixes** - Wi-Fi, touchpad, display optimizations
-* **Automated Installation** - One-command setup with `Install.sh`
-* **Comprehensive Testing** - 14/14 Python tests, 7/7 unit tests passing
 
 _Note that even though this guide was essentially written for the HP G1A, it will mostly apply to other AMD Strix Halo devices out there, too._
 
@@ -242,15 +224,6 @@ From the Level1Techs forum discussion:
 4. **File System:** Our enhanced guide uses ZFS instead of Btrfs for better performance
 
 **Recommended:** Use `Install.sh` for automated Z13-specific installation or follow `My_Instructions.md` for manual installation with Z13 optimizations.
-
-### **Key Improvements Over Original:**
-- **ZFS instead of Btrfs** - Better compression and snapshots
-- **Omarchy desktop** - Modern tiling window manager
-- **Zen kernel** - Desktop-optimized for better performance and gaming
-- **AMD Strix Halo optimization** - Proper TDP control (45W-120W+)
-- **Automated installation** - One-command setup
-- **Comprehensive testing** - Production-ready quality
-- **Hardware-specific fixes** - All Z13 issues resolved
 
 ---
 

@@ -49,8 +49,8 @@ graph TD
     O --> O1[Configure 7W-54W TDP]
     O1 --> P
     
-    P[📸 Btrfs Snapshots?]
-    P -->|Yes| P1[Setup Snapper]
+    P[📸 ZFS Snapshots?]
+    P -->|Yes| P1[Setup ZFS Auto-Snapshots]
     P -->|No| Q
     P1 --> Q
     

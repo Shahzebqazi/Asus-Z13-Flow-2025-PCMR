@@ -9,6 +9,8 @@ This project significantly enhances and modernizes the original Level1Techs comm
 - **✅ Fixed partition variable assignment** - Corrected dual-boot partition logic that could cause data loss  
 - **✅ Replaced Btrfs with ZFS** - Modern file system with superior compression, snapshots, and data integrity
 - **✅ XFCE as default desktop** - User-friendly environment perfect for Windows/Mac users transitioning to Linux
+- **✅ Fixed desktop environment inconsistency** - Script now properly defaults to XFCE as documented
+- **✅ Removed outdated Btrfs packages** - Cleaned up unnecessary btrfs-progs dependency
 
 ### **🧪 Professional Testing Infrastructure:**
 - **Python test suite** with comprehensive validation

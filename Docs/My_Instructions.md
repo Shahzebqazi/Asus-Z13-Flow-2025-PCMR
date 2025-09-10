@@ -175,30 +175,30 @@ powercfg /fastboot off
 ## Installation Method Selection
 
 Choose your preferred installation method:
-1. **Automated Installation:** Use the `my_arch_install` script (recommended for beginners)
+1. **Automated Installation:** Use the `Install.sh` script (recommended for beginners)
 2. **Manual Installation:** Follow step-by-step instructions below
 
 ---
 
-## Method 1: Automated Installation (my_arch_install)
+## Method 1: Automated Installation (Install.sh)
 
 ### Quick Start (Recommended)
 ```bash
 # Boot from Arch Linux USB and run:
-curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/my_arch_install.sh | bash
+curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.sh | bash
 ```
 
 ### Alternative: Download and Inspect Script First
 ```bash
 # Download script for review
-curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/my_arch_install.sh -o my_arch_install.sh
+curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.sh -o Install.sh
 
 # Make executable and review
-chmod +x my_arch_install.sh
-nano my_arch_install.sh
+chmod +x Install.sh
+nano Install.sh
 
 # Run when ready
-./my_arch_install.sh
+./Install.sh
 ```
 
 The script will prompt for configuration options including:

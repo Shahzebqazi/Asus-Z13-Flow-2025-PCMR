@@ -25,6 +25,11 @@ USERNAME=""
 HOSTNAME=""
 TIMEZONE=""
 
+# Installation state tracking
+INSTALLATION_STARTED=false
+ZFS_POOL_CREATED=false
+BASE_SYSTEM_INSTALLED=false
+
 # Function to print colored output
 print_status() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -58,8 +63,31 @@ configure_installation() {
     print_status "Available disks:"
     lsblk -d -o NAME,SIZE,MODEL
     echo ""
-    read -p "Enter the disk device (e.g., nvme0n1): " DISK_DEVICE
-    DISK_DEVICE="/dev/${DISK_DEVICE}"
+    
+    while true; do
+        read -p "Enter the disk device (e.g., nvme0n1): " DISK_DEVICE
+        if [[ -z "$DISK_DEVICE" ]]; then
+            print_error "Disk device cannot be empty. Please try again."
+            continue
+        fi
+        
+        # Remove /dev/ prefix if user included it
+        DISK_DEVICE="${DISK_DEVICE#/dev/}"
+        
+        # Validate disk exists
+        if [[ ! -b "/dev/$DISK_DEVICE" ]]; then
+            print_error "Disk /dev/$DISK_DEVICE does not exist. Please check the device name."
+            continue
+        fi
+        
+        # Confirm disk selection
+        print_warning "You selected: /dev/$DISK_DEVICE"
+        read -p "Is this correct? (y/n): " confirm_disk
+        if [[ $confirm_disk == "y" || $confirm_disk == "Y" ]]; then
+            DISK_DEVICE="/dev/$DISK_DEVICE"
+            break
+        fi
+    done
     
     # Dual boot configuration
     echo ""
@@ -67,29 +95,73 @@ configure_installation() {
     
     # User configuration
     echo ""
-    read -p "Enter username: " USERNAME
-    read -p "Enter hostname: " HOSTNAME
-    read -p "Enter timezone (e.g., America/New_York): " TIMEZONE
+    
+    # Username validation
+    while true; do
+        read -p "Enter username: " USERNAME
+        if [[ -z "$USERNAME" ]]; then
+            print_error "Username cannot be empty. Please try again."
+            continue
+        fi
+        if [[ ! "$USERNAME" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
+            print_error "Username must start with lowercase letter or underscore and contain only lowercase letters, numbers, hyphens, and underscores."
+            continue
+        fi
+        break
+    done
+    
+    # Hostname validation
+    while true; do
+        read -p "Enter hostname: " HOSTNAME
+        if [[ -z "$HOSTNAME" ]]; then
+            print_error "Hostname cannot be empty. Please try again."
+            continue
+        fi
+        if [[ ! "$HOSTNAME" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$ ]]; then
+            print_error "Hostname must start and end with alphanumeric characters and contain only alphanumeric characters and hyphens."
+            continue
+        fi
+        break
+    done
+    
+    # Timezone validation
+    while true; do
+        read -p "Enter timezone (e.g., America/New_York): " TIMEZONE
+        if [[ -z "$TIMEZONE" ]]; then
+            print_error "Timezone cannot be empty. Please try again."
+            continue
+        fi
+        if [[ ! -f "/usr/share/zoneinfo/$TIMEZONE" ]]; then
+            print_warning "Timezone '$TIMEZONE' not found. Common timezones:"
+            print_warning "America/New_York, America/Los_Angeles, Europe/London, Asia/Tokyo"
+            read -p "Continue with this timezone anyway? (y/n): " continue_tz
+            if [[ $continue_tz == "y" || $continue_tz == "Y" ]]; then
+                break
+            fi
+            continue
+        fi
+        break
+    done
     
     # Desktop environment
     echo ""
     echo "Desktop Environment Options:"
-    echo "1) Omarchy (Tiling window manager - default)"
-    # echo "2) XFCE (Lightweight, user-friendly - recommended for new users)"
-    # echo "3) i3 (Tiling window manager - advanced users)"
-    # echo "4) GNOME (Modern desktop environment)"
-    # echo "5) KDE Plasma (Feature-rich desktop)"
-    # echo "6) Minimal (No desktop environment)"
+    echo "1) XFCE (Lightweight, user-friendly - recommended for new users)"
+    echo "2) Omarchy (Tiling window manager - advanced users)"
+    echo "3) i3 (Tiling window manager - advanced users)"
+    echo "4) GNOME (Modern desktop environment)"
+    echo "5) KDE Plasma (Feature-rich desktop)"
+    echo "6) Minimal (No desktop environment)"
     read -p "Choose desktop environment (1): " desktop_choice
     
     case $desktop_choice in
-        1) INSTALL_DESKTOP="omarchy" ;;
-        # 2) INSTALL_DESKTOP="xfce" ;;
-        # 3) INSTALL_DESKTOP="i3" ;;
-        # 4) INSTALL_DESKTOP="gnome" ;;
-        # 5) INSTALL_DESKTOP="kde" ;;
-        # 6) INSTALL_DESKTOP="minimal" ;;
-        *) INSTALL_DESKTOP="omarchy" ;;
+        1) INSTALL_DESKTOP="xfce" ;;
+        2) INSTALL_DESKTOP="omarchy" ;;
+        3) INSTALL_DESKTOP="i3" ;;
+        4) INSTALL_DESKTOP="gnome" ;;
+        5) INSTALL_DESKTOP="kde" ;;
+        6) INSTALL_DESKTOP="minimal" ;;
+        *) INSTALL_DESKTOP="xfce" ;;
     esac
     
     # Gaming setup
@@ -132,17 +204,38 @@ check_prerequisites() {
     # Check if running in UEFI mode
     if [[ ! -d /sys/firmware/efi ]]; then
         print_error "System is not booted in UEFI mode. Please boot in UEFI mode."
+        print_warning "To fix this:"
+        print_warning "1. Restart your computer"
+        print_warning "2. Enter BIOS/UEFI settings (usually F2, F12, or Del during boot)"
+        print_warning "3. Enable UEFI mode and disable Legacy/CSM mode"
+        print_warning "4. Save and exit, then boot from Arch Linux USB again"
         exit 1
     fi
     
     # Check internet connection
+    print_status "Checking internet connection..."
     if ! ping -c 1 archlinux.org &> /dev/null; then
         print_error "No internet connection. Please connect to the internet first."
+        print_warning "Connection options:"
+        print_warning "1. Wi-Fi: Use 'iwctl' command to connect"
+        print_warning "2. Ethernet: Connect cable and run 'dhcpcd'"
+        print_warning "3. USB Tethering: Use phone's mobile data"
         exit 1
     fi
     
     # Update system clock
-    timedatectl set-ntp true
+    print_status "Synchronizing system clock..."
+    if ! timedatectl set-ntp true; then
+        print_warning "Failed to set NTP. Continuing with local time..."
+    fi
+    
+    # Check available disk space
+    print_status "Checking available disk space..."
+    local available_space=$(df / | awk 'NR==2 {print $4}')
+    if [[ $available_space -lt 1048576 ]]; then  # Less than 1GB
+        print_warning "Low disk space detected. Installation may fail."
+        print_warning "Available space: $(($available_space / 1024))MB"
+    fi
     
     print_status "Prerequisites check completed."
 }
@@ -249,6 +342,23 @@ format_partitions() {
 setup_zfs() {
     print_header "Setting up ZFS"
     
+    # Check available disk space for ZFS
+    print_status "Checking disk space for ZFS installation..."
+    local available_space=$(df /mnt 2>/dev/null | awk 'NR==2 {print $4}' || echo "0")
+    local required_space=2097152  # 2GB minimum for ZFS
+    
+    if [[ $available_space -lt $required_space ]]; then
+        print_error "Insufficient disk space for ZFS installation."
+        print_error "Available: $(($available_space / 1024))MB, Required: $(($required_space / 1024))MB"
+        print_warning "Consider:"
+        print_warning "1. Free up more space on the target disk"
+        print_warning "2. Use a different file system (ext4)"
+        print_warning "3. Shrink Windows partition further"
+        exit 1
+    fi
+    
+    print_status "Disk space check passed: $(($available_space / 1024))MB available"
+    
     # Create ZFS pool
     print_status "Creating ZFS pool..."
     zpool create -f -o ashift=12 \
@@ -297,33 +407,59 @@ install_base_system() {
     print_header "Installing Base System"
     
     # Update package database
-    pacman -Sy
+    print_status "Updating package database..."
+    if ! pacman -Sy; then
+        print_error "Failed to update package database. Check internet connection."
+        exit 1
+    fi
     
     # Install base system
-    print_status "Installing base packages..."
-    pacstrap /mnt base linux linux-firmware base-devel
+    print_status "Installing base packages (this may take 5-10 minutes)..."
+    if ! pacstrap /mnt base linux linux-firmware base-devel; then
+        print_error "Failed to install base packages. Check disk space and internet connection."
+        exit 1
+    fi
     
     # Install essential packages
     print_status "Installing essential packages..."
-    pacstrap /mnt vim nano networkmanager git wget curl intel-ucode amd-ucode
-    pacstrap /mnt btrfs-progs grub efibootmgr
+    if ! pacstrap /mnt vim nano networkmanager git wget curl intel-ucode amd-ucode; then
+        print_error "Failed to install essential packages."
+        exit 1
+    fi
+    
+    if ! pacstrap /mnt grub efibootmgr; then
+        print_error "Failed to install bootloader packages."
+        exit 1
+    fi
     
     # Install hardware-specific packages
     print_status "Installing hardware-specific packages..."
-    pacstrap /mnt mesa xf86-video-amdgpu linux-headers
+    if ! pacstrap /mnt mesa xf86-video-amdgpu linux-headers; then
+        print_error "Failed to install hardware packages."
+        exit 1
+    fi
     
     # Install ZFS support
-    print_status "Installing ZFS packages..."
-    pacstrap /mnt zfs-dkms zfs-utils
+    print_status "Installing ZFS packages (this may take 5-15 minutes)..."
+    if ! pacstrap /mnt zfs-dkms zfs-utils; then
+        print_error "Failed to install ZFS packages. Check internet connection and disk space."
+        exit 1
+    fi
     
     # Install dual-boot support if needed
     if [[ $DUAL_BOOT == "y" ]]; then
-        pacstrap /mnt os-prober ntfs-3g
+        print_status "Installing dual-boot support..."
+        if ! pacstrap /mnt os-prober ntfs-3g; then
+            print_warning "Failed to install dual-boot packages. Continuing..."
+        fi
     fi
     
     # Install snapshot tools if enabled
     if [[ $ENABLE_SNAPSHOTS == "y" ]]; then
-        pacstrap /mnt zfs-auto-snapshot
+        print_status "Installing snapshot tools..."
+        if ! pacstrap /mnt zfs-auto-snapshot; then
+            print_warning "Failed to install snapshot tools. Continuing..."
+        fi
     fi
     
     print_status "Base system installation completed."
@@ -465,6 +601,19 @@ install_desktop() {
     print_header "Installing Desktop Environment: $INSTALL_DESKTOP"
     
     case $INSTALL_DESKTOP in
+        "xfce")
+            arch-chroot /mnt /bin/bash << EOF
+# Install XFCE desktop environment
+pacman -S --noconfirm xfce4 xfce4-goodies xorg-server
+pacman -S --noconfirm lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
+pacman -S --noconfirm firefox thunar-archive-plugin file-roller
+pacman -S --noconfirm pulseaudio pulseaudio-alsa pavucontrol
+pacman -S --noconfirm network-manager-applet
+
+# Enable display manager
+systemctl enable lightdm
+EOF
+            ;;
         "omarchy")
             arch-chroot /mnt /bin/bash << EOF
 # Install Omarchy tiling window manager
@@ -487,39 +636,33 @@ sudo -u $USERNAME yay -S --noconfirm omarchy
 systemctl enable lightdm
 EOF
             ;;
-        # "xfce")
-        #     arch-chroot /mnt /bin/bash << 'EOF'
-        # pacman -S --noconfirm xfce4 xfce4-goodies xorg-server
-        # pacman -S --noconfirm lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
-        # pacman -S --noconfirm firefox thunar-archive-plugin file-roller
-        # pacman -S --noconfirm pulseaudio pulseaudio-alsa pavucontrol
-        # pacman -S --noconfirm network-manager-applet
-        # systemctl enable lightdm
-        # EOF
-        #     ;;
-        # "i3")
-        #     arch-chroot /mnt /bin/bash << 'EOF'
-        # pacman -S --noconfirm xorg-server xorg-xinit i3-wm i3status i3lock dmenu
-        # pacman -S --noconfirm lightdm lightdm-gtk-greeter
-        # pacman -S --noconfirm firefox alacritty thunar
-        # systemctl enable lightdm
-        # EOF
-        #     ;;
-        # "gnome")
-        #     arch-chroot /mnt /bin/bash << 'EOF'
-        # pacman -S --noconfirm gnome gnome-extra
-        # systemctl enable gdm
-        # EOF
-        #     ;;
-        # "kde")
-        #     arch-chroot /mnt /bin/bash << 'EOF'
-        # pacman -S --noconfirm plasma kde-applications
-        # systemctl enable sddm
-        # EOF
-        #     ;;
-        # "minimal")
-        #     print_status "Minimal installation - no desktop environment."
-        #     ;;
+        "i3")
+            arch-chroot /mnt /bin/bash << 'EOF'
+pacman -S --noconfirm xorg-server xorg-xinit i3-wm i3status i3lock dmenu
+pacman -S --noconfirm lightdm lightdm-gtk-greeter
+pacman -S --noconfirm firefox alacritty thunar
+pacman -S --noconfirm pulseaudio pulseaudio-alsa pavucontrol
+pacman -S --noconfirm network-manager-applet
+systemctl enable lightdm
+EOF
+            ;;
+        "gnome")
+            arch-chroot /mnt /bin/bash << 'EOF'
+pacman -S --noconfirm gnome gnome-extra
+pacman -S --noconfirm firefox
+systemctl enable gdm
+EOF
+            ;;
+        "kde")
+            arch-chroot /mnt /bin/bash << 'EOF'
+pacman -S --noconfirm plasma kde-applications
+pacman -S --noconfirm firefox
+systemctl enable sddm
+EOF
+            ;;
+        "minimal")
+            print_status "Minimal installation - no desktop environment."
+            ;;
     esac
     
     print_status "Desktop environment installation completed."
@@ -592,6 +735,24 @@ EOF
     print_status "System update completed."
 }
 
+# Function to cleanup on failure
+cleanup_on_failure() {
+    print_error "Installation failed. Cleaning up..."
+    
+    if [[ $ZFS_POOL_CREATED == true ]]; then
+        print_status "Destroying ZFS pool..."
+        zpool destroy -f zroot 2>/dev/null || true
+    fi
+    
+    if [[ -d /mnt ]]; then
+        print_status "Unmounting filesystems..."
+        umount -R /mnt 2>/dev/null || true
+    fi
+    
+    print_error "Cleanup completed. You can try the installation again."
+    exit 1
+}
+
 # Function to cleanup and finish
 cleanup_and_finish() {
     print_header "Installation Complete"
@@ -625,11 +786,16 @@ main() {
     print_status "Version 1.0.0 - September 5, 2025"
     print_status ""
     
+    # Set up error handling
+    trap cleanup_on_failure ERR
+    
     # Check if running as root
     if [[ $EUID -ne 0 ]]; then
         print_error "This script must be run as root (from Arch Linux installation media)"
         exit 1
     fi
+    
+    INSTALLATION_STARTED=true
     
     # Run installation steps
     configure_installation
@@ -637,7 +803,9 @@ main() {
     partition_disk
     format_partitions
     setup_zfs
+    ZFS_POOL_CREATED=true
     install_base_system
+    BASE_SYSTEM_INSTALLED=true
     configure_system
     apply_z13_fixes
     install_power_management

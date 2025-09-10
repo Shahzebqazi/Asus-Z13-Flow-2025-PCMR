@@ -31,7 +31,7 @@ print_header() {
 test_syntax() {
     print_header "Testing Script Syntax"
     
-    if bash -n ../Install.sh; then
+    if bash -n Install.sh; then
         print_status "Install.sh syntax is valid"
         return 0
     else
@@ -44,7 +44,7 @@ test_syntax() {
 test_functions() {
     print_header "Testing Function Definitions"
     
-    local script_path="../Install.sh"
+    local script_path="Install.sh"
     local required_functions=(
         "configure_installation"
         "check_prerequisites"
@@ -84,7 +84,7 @@ test_functions() {
 test_zfs_config() {
     print_header "Testing ZFS Configuration"
     
-    local script_path="../Install.sh"
+    local script_path="Install.sh"
     local zfs_checks=(
         "zpool create"
         "zfs create"
@@ -113,7 +113,7 @@ test_zfs_config() {
 test_hardware_fixes() {
     print_header "Testing Z13 Hardware Fixes"
     
-    local script_path="../Install.sh"
+    local script_path="Install.sh"
     local hardware_fixes=(
         "mt7925e.*disable_aspm"
         "hid_asus"
@@ -142,7 +142,7 @@ test_hardware_fixes() {
 test_power_management() {
     print_header "Testing Power Management"
     
-    local script_path="../Install.sh"
+    local script_path="Install.sh"
     local power_tools=(
         "asusctl"
         "power-profiles-daemon"
@@ -170,7 +170,7 @@ test_power_management() {
 test_desktop_environments() {
     print_header "Testing Desktop Environment Support"
     
-    local script_path="../Install.sh"
+    local script_path="Install.sh"
     local desktop_envs=(
         "omarchy"
         "xfce"
@@ -201,7 +201,7 @@ test_desktop_environments() {
 test_error_handling() {
     print_header "Testing Error Handling"
     
-    local script_path="../Install.sh"
+    local script_path="Install.sh"
     local error_checks=(
         "set -e"
         "print_error"

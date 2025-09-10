@@ -223,7 +223,7 @@ From the Level1Techs forum discussion:
 3. **Power Management:** Z13 needs asusctl for TDP control (7W-54W)
 4. **File System:** Our enhanced guide uses ZFS instead of Btrfs for better performance
 
-**Recommended:** Use `../Install.sh` for automated Z13-specific installation or follow `My_Instructions.md` for manual installation with Z13 optimizations.
+**Recommended:** Use `Install.sh` for automated Z13-specific installation or follow `My_Instructions.md` for manual installation with Z13 optimizations.
 
 ---
 

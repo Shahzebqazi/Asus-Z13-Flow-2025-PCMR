@@ -21,7 +21,7 @@ graph TD
     G --> H[💿 Boot Arch Linux USB]
     
     H --> I{Choose Installation Method}
-    I -->|🤖 Automated| J[Run curl command<br/>../Install.sh]
+    I -->|🤖 Automated| J[Run curl command<br/>Install.sh]
     I -->|📋 Manual| K[Follow Docs/My_Instructions.md]
     
     J --> L[⚙️ Configure Options]

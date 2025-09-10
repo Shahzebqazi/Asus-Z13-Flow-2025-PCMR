@@ -20,7 +20,7 @@ class ArchInstallationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up test environment."""
-        cls.script_path = Path("../Install.sh").resolve()
+        cls.script_path = Path("Install.sh").resolve()
         cls.test_results = {}
         cls.script_content = cls._read_script()
     

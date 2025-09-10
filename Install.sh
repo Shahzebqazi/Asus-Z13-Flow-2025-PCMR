@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# my_arch_install.sh - Configurable Arch Linux Installation Script for ASUS ROG Flow Z13
+# Install.sh - Configurable Arch Linux Installation Script for ASUS ROG Flow Z13
 # Author: sqazi
 # Version: 1.0.0
 # Date: September 10, 2025

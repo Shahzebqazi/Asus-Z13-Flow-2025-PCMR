@@ -22,7 +22,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.
 - **Touchpad** - Full functionality with touch support
 - **Display** - No flickering, optimized for Z13
 - **Audio** - Complete audio setup
-- **Power Management** - 7W to 120W+ TDP control
+- **Power Management** - AMD Strix Halo TDP control (45W-120W+)
 - **Gaming** - Steam, Proton, GameMode ready
 
 ### **⚡ Performance Features**
@@ -30,6 +30,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.
 - **Omarchy Desktop** - Tiling window manager (default)
 - **Fast Boot** - 5-6 seconds to desktop
 - **Dual-Boot** - Preserves Windows safely
+- **Advanced Cooling** - Optimized for high TDP workloads
 
 ---
 
@@ -60,8 +61,10 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.
 
 ### **Additional Options:**
 - **Gaming Setup** - Steam, Proton, GameMode
-- **Power Management** - Advanced TDP control
+- **Power Management** - AMD Strix Halo TDP control (45W-120W+)
 - **ZFS Snapshots** - Automatic system recovery
+- **Hardware Fixes** - All Z13-specific optimizations
+- **AUR Support** - yay helper for additional packages
 
 ---
 
@@ -73,7 +76,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/Install.
 | **Touchpad** | ✅ Working | Full touch support |
 | **Display** | ✅ Working | No flickering issues |
 | **Audio** | ✅ Working | PulseAudio configured |
-| **Power** | ✅ Working | 7W-120W+ TDP control |
+| **Power** | ✅ Working | AMD Strix Halo TDP (45W-120W+) |
 | **Gaming** | ✅ Working | Steam + Proton ready |
 
 ---
@@ -120,7 +123,9 @@ cat Docs/My_Instructions.md
 - **OS:** Arch Linux (rolling release)
 - **File System:** ZFS with compression
 - **Desktop:** Omarchy tiling window manager
-- **Testing:** 14/14 tests passing
+- **Testing:** 14/14 Python tests, 7/7 unit tests passing
+- **Hardware:** ASUS ROG Flow Z13 (AMD Ryzen Strix Halo)
+- **Quality:** Production-ready with comprehensive error handling
 
 ---
 

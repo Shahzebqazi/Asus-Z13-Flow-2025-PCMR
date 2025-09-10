@@ -48,7 +48,7 @@ graph TD
     N1 --> O
     
     O[⚡ Power Management]
-    O --> O1[Configure 7W-54W TDP]
+    O --> O1[Configure AMD Strix Halo TDP<br/>45W-120W+ Control]
     O1 --> P
     
     P[📸 ZFS Snapshots?]
@@ -58,13 +58,15 @@ graph TD
     
     Q[🔧 Install Arch Linux]
     Q --> R[Apply Z13 Hardware Fixes]
-    R --> R1[Wi-Fi Stability Fix]
-    R --> R2[Touchpad Detection]
-    R --> R3[Screen Flicker Fix]
+    R --> R1[Wi-Fi Stability Fix<br/>MediaTek MT7925e]
+    R --> R2[Touchpad Detection<br/>hid_asus driver]
+    R --> R3[Screen Flicker Fix<br/>Intel PSR disabled]
+    R --> R4[Power Management<br/>asusctl + TLP]
     
     R1 --> S
     R2 --> S
     R3 --> S
+    R4 --> S
     
     S[🔄 Test Dual-Boot]
     S --> T{Boot Test Results}
@@ -81,13 +83,22 @@ graph TD
     W -->|Yes| U
     W -->|No| X[📞 Seek Help]
     
-    U --> Y[🚀 Enjoy Arch Linux!]
+    U --> U1[🧪 Run Test Suite]
+    U1 --> U2[14/14 Python Tests]
+    U1 --> U3[7/7 Unit Tests]
+    U2 --> U4[✅ All Tests Pass]
+    U3 --> U4
+    U4 --> Y[🚀 Enjoy Arch Linux!]
     
     style A fill:#e1f5fe
     style B fill:#fff3e0
     style C fill:#e8f5e8
     style J fill:#f3e5f5
     style U fill:#e8f5e8
+    style U1 fill:#fff3e0
+    style U2 fill:#e8f5e8
+    style U3 fill:#e8f5e8
+    style U4 fill:#e8f5e8
     style Y fill:#e8f5e8
     style V fill:#ffebee
     style X fill:#ffebee

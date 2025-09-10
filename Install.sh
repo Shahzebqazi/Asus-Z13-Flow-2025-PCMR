@@ -146,8 +146,8 @@ configure_installation() {
     # Desktop environment
     echo ""
     echo "Desktop Environment Options:"
-    echo "1) XFCE (Lightweight, user-friendly - recommended for new users)"
-    echo "2) Omarchy (Tiling window manager - advanced users)"
+    echo "1) Omarchy (Tiling window manager - default, optimized for Z13)"
+    echo "2) XFCE (Lightweight, user-friendly - recommended for new users)"
     echo "3) i3 (Tiling window manager - advanced users)"
     echo "4) GNOME (Modern desktop environment)"
     echo "5) KDE Plasma (Feature-rich desktop)"
@@ -155,13 +155,13 @@ configure_installation() {
     read -p "Choose desktop environment (1): " desktop_choice
     
     case $desktop_choice in
-        1) INSTALL_DESKTOP="xfce" ;;
-        2) INSTALL_DESKTOP="omarchy" ;;
+        1) INSTALL_DESKTOP="omarchy" ;;
+        2) INSTALL_DESKTOP="xfce" ;;
         3) INSTALL_DESKTOP="i3" ;;
         4) INSTALL_DESKTOP="gnome" ;;
         5) INSTALL_DESKTOP="kde" ;;
         6) INSTALL_DESKTOP="minimal" ;;
-        *) INSTALL_DESKTOP="xfce" ;;
+        *) INSTALL_DESKTOP="omarchy" ;;
     esac
     
     # Gaming setup
@@ -601,19 +601,6 @@ install_desktop() {
     print_header "Installing Desktop Environment: $INSTALL_DESKTOP"
     
     case $INSTALL_DESKTOP in
-        "xfce")
-            arch-chroot /mnt /bin/bash << EOF
-# Install XFCE desktop environment
-pacman -S --noconfirm xfce4 xfce4-goodies xorg-server
-pacman -S --noconfirm lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
-pacman -S --noconfirm firefox thunar-archive-plugin file-roller
-pacman -S --noconfirm pulseaudio pulseaudio-alsa pavucontrol
-pacman -S --noconfirm network-manager-applet
-
-# Enable display manager
-systemctl enable lightdm
-EOF
-            ;;
         "omarchy")
             arch-chroot /mnt /bin/bash << EOF
 # Install Omarchy tiling window manager
@@ -631,6 +618,19 @@ cd yay
 sudo -u $USERNAME makepkg -si --noconfirm
 cd /
 sudo -u $USERNAME yay -S --noconfirm omarchy
+
+# Enable display manager
+systemctl enable lightdm
+EOF
+            ;;
+        "xfce")
+            arch-chroot /mnt /bin/bash << EOF
+# Install XFCE desktop environment
+pacman -S --noconfirm xfce4 xfce4-goodies xorg-server
+pacman -S --noconfirm lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
+pacman -S --noconfirm firefox thunar-archive-plugin file-roller
+pacman -S --noconfirm pulseaudio pulseaudio-alsa pavucontrol
+pacman -S --noconfirm network-manager-applet
 
 # Enable display manager
 systemctl enable lightdm

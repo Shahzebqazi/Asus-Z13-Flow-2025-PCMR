@@ -28,17 +28,19 @@ graph TD
     K --> L
     
     L --> M[Desktop Environment?]
-    M --> M1[i3 - Tiling WM]
-    M --> M2[XFCE - User Friendly (Default)]
-    M --> M3[GNOME - Full DE]
-    M --> M4[KDE - Feature Rich]
-    M --> M5[Minimal - No GUI]
+    M --> M1[Omarchy - Tiling WM (Default)]
+    M --> M2[XFCE - User Friendly]
+    M --> M3[i3 - Tiling WM]
+    M --> M4[GNOME - Full DE]
+    M --> M5[KDE - Feature Rich]
+    M --> M6[Minimal - No GUI]
     
     M1 --> N
     M2 --> N
     M3 --> N
     M4 --> N
     M5 --> N
+    M6 --> N
     
     N[🎮 Gaming Setup?]
     N -->|Yes| N1[Install Steam + Proton]

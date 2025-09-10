@@ -172,8 +172,8 @@ test_desktop_environments() {
     
     local script_path="../Install.sh"
     local desktop_envs=(
-        "xfce"
         "omarchy"
+        "xfce"
         "i3"
         "gnome"
         "kde"

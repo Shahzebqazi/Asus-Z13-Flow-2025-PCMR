@@ -94,8 +94,8 @@ class ArchInstallationTests(unittest.TestCase):
     def test_desktop_environment_support(self):
         """Test desktop environment configuration support."""
         desktop_environments = {
-            'xfce': ['xfce4', 'xfce4-goodies', 'lightdm-gtk-greeter-settings'],
             'omarchy': ['omarchy', 'yay'],
+            'xfce': ['xfce4', 'xfce4-goodies', 'lightdm-gtk-greeter-settings'],
             'i3': ['i3-wm', 'i3status', 'i3lock', 'dmenu'],
             'gnome': ['gnome', 'gnome-extra', 'gdm'],
             'kde': ['plasma', 'kde-applications', 'sddm']
@@ -107,8 +107,8 @@ class ArchInstallationTests(unittest.TestCase):
             if not desktop_found:
                 missing_desktops.append(desktop)
         
-        # At least XFCE should be supported (default)
-        self.assertIn('xfce4', self.script_content, "XFCE packages not found")
+        # At least Omarchy should be supported (default)
+        self.assertIn('omarchy', self.script_content, "Omarchy packages not found")
         self.test_results['desktop_environments'] = 'PASS'
     
     def test_z13_hardware_fixes(self):

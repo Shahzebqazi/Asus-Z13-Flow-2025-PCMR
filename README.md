@@ -8,8 +8,8 @@ This project significantly enhances and modernizes the original Level1Techs comm
 - **✅ Fixed asusctl installation** - Now properly installs via AUR with yay helper
 - **✅ Fixed partition variable assignment** - Corrected dual-boot partition logic that could cause data loss  
 - **✅ Replaced Btrfs with ZFS** - Modern file system with superior compression, snapshots, and data integrity
-- **✅ XFCE as default desktop** - User-friendly environment perfect for Windows/Mac users transitioning to Linux
-- **✅ Fixed desktop environment inconsistency** - Script now properly defaults to XFCE as documented
+- **✅ Omarchy as default desktop** - Tiling window manager optimized for Z13 performance and productivity
+- **✅ Fixed desktop environment inconsistency** - Script now properly defaults to Omarchy as documented
 - **✅ Removed outdated Btrfs packages** - Cleaned up unnecessary btrfs-progs dependency
 
 ### **🧪 Professional Testing Infrastructure:**
@@ -213,7 +213,7 @@ This project builds directly on the excellent foundation work shared in the Leve
 ### **Software Stack:**
 - **OS:** Arch Linux (rolling release)
 - **File System:** ZFS with compression and snapshots
-- **Desktop:** XFCE 4.18+ with full touch support
+- **Desktop:** Omarchy tiling window manager with full touch support
 - **Audio:** PulseAudio + ALSA
 - **Power Management:** asusctl + TLP + power-profiles-daemon
 - **Gaming:** Steam + Proton + GameMode + MangoHUD
@@ -225,7 +225,7 @@ This project builds directly on the excellent foundation work shared in the Leve
 ### **Version 1.0.0 (September 10, 2025)**
 - **Initial release** with comprehensive Z13 support
 - **ZFS file system** implementation
-- **XFCE desktop environment** as default
+- **Omarchy tiling window manager** as default
 - **Python testing suite** for quality assurance
 - **Complete documentation** overhaul
 - **All critical bugs fixed** from original implementations
@@ -234,7 +234,7 @@ This project builds directly on the excellent foundation work shared in the Leve
 1. **Fixed asusctl installation** - Proper AUR handling
 2. **Corrected partition logic** - Safe dual-boot implementation  
 3. **Modern file system** - ZFS instead of Btrfs
-4. **User-friendly desktop** - XFCE instead of i3
+4. **Optimized desktop** - Omarchy tiling window manager instead of i3
 5. **Professional testing** - Automated validation suite
 6. **Enhanced documentation** - Comprehensive guides for all skill levels
 

@@ -49,11 +49,6 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 ./pcmr.sh --dual-boot-gpt --zen-kernel
 ```
 
-### **Interactive Demo of TUI**
-```bash
-# Test the TUI interface
-./tui_display.sh
-```
 
 ## 📋 **Installation Options**
 

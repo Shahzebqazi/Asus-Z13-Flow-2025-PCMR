@@ -280,58 +280,6 @@ tui_confirm() {
     [[ "$response" =~ ^[Yy] ]]
 }
 
-# Demo function to test TUI
-demo_tui() {
-    init_tui
-    
-    # Demo different modes
-    echo "Testing TUI modes..."
-    
-    # Test CONFIG mode
-    tui_set_mode "CONFIG" "zen"
-    add_log_message "Demo: CONFIG mode (zen.conf)"
-    sleep 2
-    
-    # Test MANUAL mode
-    tui_set_mode "MANUAL" ""
-    add_log_message "Demo: MANUAL mode (user prompts)"
-    sleep 2
-    
-    # Test AUTO mode
-    tui_set_mode "AUTO" ""
-    add_log_message "Demo: AUTO mode (default settings)"
-    sleep 2
-    
-    # Simulate installation progress
-    for module_idx in $(seq 0 8); do
-        CURRENT_MODULE_INDEX=$module_idx
-        add_log_message "Starting ${MODULE_NAMES[$module_idx]} module..."
-        
-        for progress in $(seq 0 10 100); do
-            update_module_progress $module_idx $progress
-            sleep 0.1
-        done
-        
-        add_log_message "${MODULE_NAMES[$module_idx]} module completed ✓"
-        sleep 0.5
-    done
-    
-    add_log_message "Installation completed successfully! 🎉"
-    
-    # Test input
-    username=$(tui_read_input "Enter username:")
-    add_log_message "Username set to: $username"
-    
-    if tui_confirm "Reboot system now?"; then
-        add_log_message "Rebooting system..."
-    else
-        add_log_message "Reboot cancelled"
-    fi
-    
-    sleep 2
-    cleanup_tui
-}
-
 # Set installation mode for TUI display
 tui_set_mode() {
     local mode="$1"
@@ -389,6 +337,14 @@ tui_warning() {
 
 # Main function for testing
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    # Run demo if script is executed directly
-    demo_tui
+    echo "TUI Display Module for Z13 Flow PCMR Arch Installation"
+    echo "======================================================"
+    echo "This module provides a 10-line TUI interface with:"
+    echo "• Rainbow progress bars (violet to red)"
+    echo "• Configuration mode indicator (CONFIG/MANUAL/AUTO)"
+    echo "• Real-time log display"
+    echo "• Interactive input handling"
+    echo ""
+    echo "This module is designed to be sourced by pcmr.sh"
+    echo "Run: ./pcmr.sh to start the installation with TUI"
 fi

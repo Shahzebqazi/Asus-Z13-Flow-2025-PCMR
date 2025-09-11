@@ -91,7 +91,7 @@ case "$1" in
             echo "Custom TDP profile activated (${custom_tdp}W TDP)"
         else
             echo "Invalid TDP value. Please enter a value between 7 and 120."
-            exit 1
+            HandleValidationError "Invalid TDP value. Please enter a value between 7 and 120."
         fi
         ;;
     "status")
@@ -106,7 +106,7 @@ case "$1" in
         echo "  max:       Maximum TDP based on charger (7-120W)"
         echo "  custom:    User-specified TDP (7-120W)"
         echo "  status:    Show current charger and TDP limits"
-        exit 1
+        HandleValidationError "Invalid TDP manager argument"
         ;;
 esac
 EOF

@@ -8,8 +8,7 @@ setup_zfs() {
     # Check available memory
     local mem_gb=$(free -g | awk 'NR==2{print $2}')
     if [[ $mem_gb -lt 2 ]]; then
-        PrintError "ZFS requires at least 2GB RAM. Available: ${mem_gb}GB"
-        return 1
+        HandleRecoverableError "ZFS requires at least 2GB RAM. Available: ${mem_gb}GB"
     fi
     
     # Create swap
@@ -19,14 +18,12 @@ setup_zfs() {
     # Load ZFS modules with error checking
     PrintStatus "Loading ZFS kernel modules..."
     if ! modprobe zfs; then
-        PrintError "Failed to load ZFS kernel modules"
-        return 1
+        HandleRecoverableError "Failed to load ZFS kernel modules"
     fi
     
     # Verify ZFS is available
     if ! command -v zpool >/dev/null 2>&1; then
-        PrintError "ZFS utilities not available after module loading"
-        return 1
+        HandleRecoverableError "ZFS utilities not available after module loading"
     fi
     
     # Create ZFS pool
@@ -154,7 +151,6 @@ filesystem_setup() {
         PrintStatus "ext4 setup completed (fallback)"
         return 0
     else
-        PrintError "All filesystem setup attempts failed"
-        exit 1
+        HandleFatalError "All filesystem setup attempts failed"
     fi
 }

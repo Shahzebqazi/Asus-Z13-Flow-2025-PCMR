@@ -8,8 +8,7 @@ detect_disk() {
     local disks=($(lsblk -d -n -o NAME | grep -E '^[a-z]+$'))
     
     if [[ ${#disks[@]} -eq 0 ]]; then
-        PrintError "No disks found"
-        exit 1
+        HandleFatalError "No disks found"
     fi
     
     if [[ ${#disks[@]} -eq 1 ]]; then
@@ -25,8 +24,7 @@ detect_disk() {
         if [[ $choice -ge 1 && $choice -le ${#disks[@]} ]]; then
             DISK_DEVICE="/dev/${disks[$((choice-1))]}"
         else
-            PrintError "Invalid selection"
-            exit 1
+            HandleValidationError "Invalid selection"
         fi
     fi
     
@@ -60,8 +58,7 @@ setup_dual_boot_gpt() {
     PrintHeader "Setting up Dual Boot (GPT UEFI)"
     
     if [[ -z "$EFI_PART" ]]; then
-        PrintError "No EFI partition found for dual boot"
-        exit 1
+        HandleFatalError "No EFI partition found for dual boot"
     fi
     
     PrintStatus "Using existing EFI partition: $EFI_PART"
@@ -200,8 +197,7 @@ setup_dual_boot_gpt() {
             PrintStatus "Swap: $SWAP_PART"
             PrintStatus "Root: $ROOT_PART"
         else
-            PrintError "Invalid partition selection"
-            exit 1
+            HandleValidationError "Invalid partition selection"
         fi
     fi
 }
@@ -284,8 +280,7 @@ setup_dual_boot_new() {
         PrintStatus "Root: $ROOT_PART"
         PrintStatus "Swap: $SWAP_PART"
     else
-        PrintError "Could not detect all required partitions intelligently"
-        exit 1
+        HandleFatalError "Could not detect all required partitions intelligently"
     fi
 }
 
@@ -366,8 +361,7 @@ setup_single_boot() {
         PrintStatus "Root: $ROOT_PART"
         PrintStatus "Swap: $SWAP_PART"
     else
-        PrintError "Could not detect all required partitions intelligently"
-        exit 1
+        HandleFatalError "Could not detect all required partitions intelligently"
     fi
 }
 
@@ -393,8 +387,7 @@ disk_management_setup() {
             setup_single_boot
             ;;
         *)
-            PrintError "Unknown dual boot mode: $DUAL_BOOT_MODE"
-            exit 1
+            HandleValidationError "Unknown dual boot mode: $DUAL_BOOT_MODE"
             ;;
     esac
     

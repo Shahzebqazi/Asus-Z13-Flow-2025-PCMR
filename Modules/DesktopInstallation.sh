@@ -24,8 +24,7 @@ desktop_installation() {
             PrintStatus "Minimal installation - no desktop environment."
             ;;
         *)
-            PrintError "Unknown desktop environment: $DESKTOP_ENVIRONMENT"
-            exit 1
+            HandleValidationError "Unknown desktop environment: $DESKTOP_ENVIRONMENT"
             ;;
     esac
     

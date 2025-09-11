@@ -45,6 +45,31 @@ USERNAME=""
 HOSTNAME=""
 TIMEZONE=""
 
+# Standardized error handling functions
+HandleFatalError() {
+    local error_msg="$1"
+    PrintError "$error_msg"
+    # Log to system log if available
+    logger -t "pcmr-installer" "FATAL: $error_msg" 2>/dev/null || true
+    exit 1
+}
+
+HandleRecoverableError() {
+    local error_msg="$1"
+    PrintError "$error_msg"
+    # Log to system log if available  
+    logger -t "pcmr-installer" "RECOVERABLE: $error_msg" 2>/dev/null || true
+    return 1
+}
+
+HandleValidationError() {
+    local error_msg="$1"
+    PrintError "$error_msg"
+    # Log to system log if available
+    logger -t "pcmr-installer" "VALIDATION: $error_msg" 2>/dev/null || true
+    exit 1
+}
+
 # Print functions (TUI-aware)
 PrintHeader() {
     local message="$1"
@@ -142,8 +167,7 @@ LoadConfig() {
     local config_file="$1"
     
     if [[ ! -f "$config_file" ]]; then
-        PrintError "Configuration file not found: $config_file"
-        exit 1
+        HandleFatalError "Configuration file not found: $config_file"
     fi
     
     PrintStatus "Loading configuration from: $config_file"
@@ -171,10 +195,7 @@ DetectDualBoot() {
             # Check EFI partition size
             local efi_size=$(lsblk -b "/dev/$efi_part" | awk 'NR==2 {print $4}' | awk '{print int($1/1024/1024)}')
             if [[ $efi_size -lt 100 ]]; then
-                PrintError "EFI partition is only ${efi_size}MB. This is too small for dual boot."
-                PrintError "Please resize EFI partition to at least 100MB before continuing."
-                PrintError "See: https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small"
-                exit 1
+                HandleFatalError "EFI partition is only ${efi_size}MB. This is too small for dual boot. Please resize EFI partition to at least 100MB before continuing. See: https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small"
             fi
             
             # Check if Windows is installed
@@ -192,9 +213,7 @@ DetectDualBoot() {
             DUAL_BOOT_MODE="new"
         fi
     else
-        PrintError "System is not in UEFI mode. Z13 Flow 2025 requires UEFI mode."
-        PrintError "Please boot in UEFI mode and try again."
-        exit 1
+        HandleFatalError "System is not in UEFI mode. Z13 Flow 2025 requires UEFI mode. Please boot in UEFI mode and try again."
     fi
 }
 
@@ -207,8 +226,7 @@ LoadModule() {
         PrintStatus "Loading module: $module_name"
         source "$module_file"
     else
-        PrintError "Module not found: $module_file"
-        exit 1
+        HandleFatalError "Module not found: $module_file"
     fi
 }
 
@@ -241,14 +259,12 @@ ValidatePrerequisites() {
     
     # Check if running as root
     if [[ $EUID -ne 0 ]]; then
-        PrintError "This script must be run as root"
-        exit 1
+        HandleFatalError "This script must be run as root"
     fi
     
     # Check if we're in a chroot environment
     if [[ -f /.arch-chroot ]]; then
-        PrintError "This script should not be run inside a chroot environment"
-        exit 1
+        HandleFatalError "This script should not be run inside a chroot environment"
     fi
     
     # Check if zsh is available (should be in Arch live environment)
@@ -262,8 +278,7 @@ ValidatePrerequisites() {
     
     # Check internet connection
     if ! ping -c 1 archlinux.org &> /dev/null; then
-        PrintError "No internet connection. Please connect to the internet and try again."
-        exit 1
+        HandleFatalError "No internet connection. Please connect to the internet and try again."
     fi
     
     PrintStatus "Prerequisites validated successfully"
@@ -337,7 +352,7 @@ Main() {
             *)
                 PrintError "Unknown option: $1"
                 ShowHelp
-                exit 1
+                HandleFatalError "Invalid command line option"
                 ;;
         esac
     done
@@ -363,9 +378,7 @@ Main() {
             # Valid modes
             ;;
         *)
-            PrintError "Invalid dual boot mode: $DUAL_BOOT_MODE"
-            PrintError "Valid modes: gpt, new, none"
-            exit 1
+            HandleValidationError "Invalid dual boot mode: $DUAL_BOOT_MODE. Valid modes: gpt, new, none"
             ;;
     esac
     

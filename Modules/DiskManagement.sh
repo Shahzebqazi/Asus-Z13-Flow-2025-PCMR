@@ -83,19 +83,126 @@ setup_dual_boot_gpt() {
     partprobe "$DISK_DEVICE"
     sleep 2
     
-    # Find the new partitions
-    local new_parts=$(lsblk -rno NAME "$DISK_DEVICE" | grep -E '[0-9]+$' | sort -V | tail -2)
-    local part_array=($new_parts)
+    # Intelligent partition detection based on type, size, and labels
+    PrintStatus "Analyzing disk partitions intelligently..."
     
-    if [[ ${#part_array[@]} -ge 2 ]]; then
-        SWAP_PART="/dev/${part_array[0]}"
-        ROOT_PART="/dev/${part_array[1]}"
-        PrintStatus "Detected partitions:"
+    # Get detailed partition information
+    local part_info=$(lsblk -rno NAME,SIZE,FSTYPE,PARTTYPE,LABEL "$DISK_DEVICE" | grep -E '[0-9]+[[:space:]]')
+    
+    declare -A detected_partitions
+    local suggested_swap=""
+    local suggested_root=""
+    
+    PrintStatus "Available partitions:"
+    while IFS= read -r line; do
+        local part_name=$(echo "$line" | awk '{print $1}')
+        local part_size=$(echo "$line" | awk '{print $2}')
+        local part_fstype=$(echo "$line" | awk '{print $3}')
+        local part_type=$(echo "$line" | awk '{print $4}')
+        local part_label=$(echo "$line" | awk '{print $5}')
+        
+        # Skip if this is the EFI partition (already detected)
+        if [[ "$part_type" == "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" ]]; then
+            PrintStatus "  /dev/$part_name: EFI System Partition ($part_size) - SKIPPING"
+            continue
+        fi
+        
+        # Skip Windows partitions
+        if [[ "$part_fstype" == "ntfs" ]] || [[ "$part_type" == "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7" && "$part_fstype" == "ntfs" ]]; then
+            PrintStatus "  /dev/$part_name: Windows partition ($part_size) - SKIPPING"
+            continue
+        fi
+        
+        # Skip Windows recovery partitions
+        if [[ "$part_type" == "de94bba4-06d1-4d40-a16a-bfd50179d6ac" ]]; then
+            PrintStatus "  /dev/$part_name: Windows Recovery partition ($part_size) - SKIPPING"
+            continue
+        fi
+        
+        # Skip Microsoft Reserved partitions
+        if [[ "$part_type" == "e3c9e316-0b5c-4db8-817d-f92df00215ae" ]]; then
+            PrintStatus "  /dev/$part_name: Microsoft Reserved partition ($part_size) - SKIPPING"
+            continue
+        fi
+        
+        # Detect suitable swap partition (Linux swap type or appropriate size)
+        if [[ "$part_type" == "0657fd6d-a4ab-43c4-84e5-0933c84b4f4f" ]] || [[ "$part_fstype" == "swap" ]]; then
+            PrintStatus "  /dev/$part_name: Linux swap partition ($part_size) - SUITABLE FOR SWAP"
+            suggested_swap="/dev/$part_name"
+        # Suggest swap for unformatted partitions of appropriate size (8-32GB range)
+        elif [[ -z "$part_fstype" || "$part_fstype" == "-" ]] && [[ "$part_size" =~ ^([8-9]|[1-2][0-9]|3[0-2])(\.[0-9]+)?G$ ]]; then
+            PrintStatus "  /dev/$part_name: Unformatted partition ($part_size) - SUITABLE FOR SWAP"
+            if [[ -z "$suggested_swap" ]]; then
+                suggested_swap="/dev/$part_name"
+            fi
+        # Detect suitable root partition (Linux filesystem type or large unformatted)
+        elif [[ "$part_type" == "0fc63daf-8483-4772-8e79-3d69d8477de4" ]] || [[ "$part_fstype" =~ ^(ext[2-4]|xfs|btrfs)$ ]]; then
+            PrintStatus "  /dev/$part_name: Linux filesystem partition ($part_size) - SUITABLE FOR ROOT"
+            suggested_root="/dev/$part_name"
+        # Suggest large unformatted partitions for root (>20GB)
+        elif [[ -z "$part_fstype" || "$part_fstype" == "-" ]]; then
+            # Extract numeric size for comparison (avoid bc dependency)
+            local size_num=$(echo "$part_size" | sed 's/[^0-9.]//g')
+            local size_unit=$(echo "$part_size" | sed 's/[0-9.]//g')
+            
+            # Simple size comparison without bc
+            if [[ "$size_unit" == "T" ]] || [[ "$size_unit" == "G" && "${size_num%.*}" -ge 20 ]]; then
+                PrintStatus "  /dev/$part_name: Large unformatted partition ($part_size) - SUITABLE FOR ROOT"
+                if [[ -z "$suggested_root" ]]; then
+                    suggested_root="/dev/$part_name"
+                fi
+            else
+                PrintStatus "  /dev/$part_name: Small unformatted partition ($part_size) - TOO SMALL"
+            fi
+        else
+            PrintStatus "  /dev/$part_name: $part_fstype partition ($part_size) - UNKNOWN TYPE"
+        fi
+    done <<< "$part_info"
+    
+    # Present suggestions to user
+    echo ""
+    PrintStatus "Intelligent partition suggestions:"
+    if [[ -n "$suggested_swap" ]]; then
+        PrintStatus "Suggested SWAP partition: $suggested_swap"
+    else
+        PrintWarning "No suitable swap partition detected"
+    fi
+    
+    if [[ -n "$suggested_root" ]]; then
+        PrintStatus "Suggested ROOT partition: $suggested_root"
+    else
+        PrintWarning "No suitable root partition detected"
+    fi
+    
+    echo ""
+    read -p "Accept suggestions? (y/n): " accept_suggestions
+    
+    if [[ "$accept_suggestions" =~ ^[Yy] ]] && [[ -n "$suggested_swap" && -n "$suggested_root" ]]; then
+        SWAP_PART="$suggested_swap"
+        ROOT_PART="$suggested_root"
+        PrintStatus "Using intelligent suggestions:"
         PrintStatus "Swap: $SWAP_PART"
         PrintStatus "Root: $ROOT_PART"
     else
-        PrintError "Could not detect new partitions"
-        exit 1
+        # Manual partition selection
+        PrintStatus "Manual partition selection:"
+        echo ""
+        lsblk "$DISK_DEVICE"
+        echo ""
+        
+        read -p "Enter swap partition (e.g., /dev/nvme0n1p5): " manual_swap
+        read -p "Enter root partition (e.g., /dev/nvme0n1p6): " manual_root
+        
+        if [[ -b "$manual_swap" && -b "$manual_root" ]]; then
+            SWAP_PART="$manual_swap"
+            ROOT_PART="$manual_root"
+            PrintStatus "Using manual selection:"
+            PrintStatus "Swap: $SWAP_PART"
+            PrintStatus "Root: $ROOT_PART"
+        else
+            PrintError "Invalid partition selection"
+            exit 1
+        fi
     fi
 }
 
@@ -120,20 +227,64 @@ setup_dual_boot_new() {
     partprobe "$DISK_DEVICE"
     sleep 2
     
-    # Find partitions
-    local parts=$(lsblk -rno NAME "$DISK_DEVICE" | grep -E '[0-9]+$' | sort -V)
-    local part_array=($parts)
+    # Use intelligent partition detection (same logic as GPT mode)
+    PrintStatus "Analyzing disk partitions intelligently..."
     
-    if [[ ${#part_array[@]} -ge 4 ]]; then
-        EFI_PART="/dev/${part_array[0]}"
-        ROOT_PART="/dev/${part_array[2]}"
-        SWAP_PART="/dev/${part_array[3]}"
+    # Get detailed partition information
+    local part_info=$(lsblk -rno NAME,SIZE,FSTYPE,PARTTYPE,LABEL "$DISK_DEVICE" | grep -E '[0-9]+[[:space:]]')
+    
+    local suggested_efi=""
+    local suggested_swap=""
+    local suggested_root=""
+    
+    PrintStatus "Available partitions:"
+    while IFS= read -r line; do
+        local part_name=$(echo "$line" | awk '{print $1}')
+        local part_size=$(echo "$line" | awk '{print $2}')
+        local part_fstype=$(echo "$line" | awk '{print $3}')
+        local part_type=$(echo "$line" | awk '{print $4}')
+        
+        # Detect EFI partition
+        if [[ "$part_type" == "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" ]]; then
+            PrintStatus "  /dev/$part_name: EFI System Partition ($part_size)"
+            suggested_efi="/dev/$part_name"
+        # Detect swap partition
+        elif [[ "$part_type" == "0657fd6d-a4ab-43c4-84e5-0933c84b4f4f" ]] || [[ "$part_fstype" == "swap" ]]; then
+            PrintStatus "  /dev/$part_name: Linux swap partition ($part_size)"
+            suggested_swap="/dev/$part_name"
+        elif [[ -z "$part_fstype" || "$part_fstype" == "-" ]] && [[ "$part_size" =~ ^([8-9]|[1-2][0-9]|3[0-2])(\.[0-9]+)?G$ ]]; then
+            PrintStatus "  /dev/$part_name: Suitable for swap ($part_size)"
+            if [[ -z "$suggested_swap" ]]; then
+                suggested_swap="/dev/$part_name"
+            fi
+        # Detect root partition
+        elif [[ "$part_type" == "0fc63daf-8483-4772-8e79-3d69d8477de4" ]] || [[ "$part_fstype" =~ ^(ext[2-4]|xfs|btrfs)$ ]]; then
+            PrintStatus "  /dev/$part_name: Linux filesystem partition ($part_size)"
+            suggested_root="/dev/$part_name"
+        elif [[ -z "$part_fstype" || "$part_fstype" == "-" ]]; then
+            local size_num=$(echo "$part_size" | sed 's/[^0-9.]//g')
+            local size_unit=$(echo "$part_size" | sed 's/[0-9.]//g')
+            if [[ "$size_unit" == "T" ]] || [[ "$size_unit" == "G" && "${size_num%.*}" -ge 20 ]]; then
+                PrintStatus "  /dev/$part_name: Suitable for root ($part_size)"
+                if [[ -z "$suggested_root" ]]; then
+                    suggested_root="/dev/$part_name"
+                fi
+            fi
+        else
+            PrintStatus "  /dev/$part_name: $part_fstype partition ($part_size)"
+        fi
+    done <<< "$part_info"
+    
+    if [[ -n "$suggested_efi" && -n "$suggested_swap" && -n "$suggested_root" ]]; then
+        EFI_PART="$suggested_efi"
+        SWAP_PART="$suggested_swap"
+        ROOT_PART="$suggested_root"
         PrintStatus "Detected partitions:"
         PrintStatus "EFI: $EFI_PART"
         PrintStatus "Root: $ROOT_PART"
         PrintStatus "Swap: $SWAP_PART"
     else
-        PrintError "Could not detect all required partitions"
+        PrintError "Could not detect all required partitions intelligently"
         exit 1
     fi
 }
@@ -158,20 +309,64 @@ setup_single_boot() {
     partprobe "$DISK_DEVICE"
     sleep 2
     
-    # Find partitions
-    local parts=$(lsblk -rno NAME "$DISK_DEVICE" | grep -E '[0-9]+$' | sort -V)
-    local part_array=($parts)
+    # Use intelligent partition detection (same logic as other modes)
+    PrintStatus "Analyzing disk partitions intelligently..."
     
-    if [[ ${#part_array[@]} -ge 3 ]]; then
-        EFI_PART="/dev/${part_array[0]}"
-        ROOT_PART="/dev/${part_array[1]}"
-        SWAP_PART="/dev/${part_array[2]}"
+    # Get detailed partition information
+    local part_info=$(lsblk -rno NAME,SIZE,FSTYPE,PARTTYPE,LABEL "$DISK_DEVICE" | grep -E '[0-9]+[[:space:]]')
+    
+    local suggested_efi=""
+    local suggested_swap=""
+    local suggested_root=""
+    
+    PrintStatus "Available partitions:"
+    while IFS= read -r line; do
+        local part_name=$(echo "$line" | awk '{print $1}')
+        local part_size=$(echo "$line" | awk '{print $2}')
+        local part_fstype=$(echo "$line" | awk '{print $3}')
+        local part_type=$(echo "$line" | awk '{print $4}')
+        
+        # Detect EFI partition
+        if [[ "$part_type" == "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" ]]; then
+            PrintStatus "  /dev/$part_name: EFI System Partition ($part_size)"
+            suggested_efi="/dev/$part_name"
+        # Detect swap partition
+        elif [[ "$part_type" == "0657fd6d-a4ab-43c4-84e5-0933c84b4f4f" ]] || [[ "$part_fstype" == "swap" ]]; then
+            PrintStatus "  /dev/$part_name: Linux swap partition ($part_size)"
+            suggested_swap="/dev/$part_name"
+        elif [[ -z "$part_fstype" || "$part_fstype" == "-" ]] && [[ "$part_size" =~ ^([8-9]|[1-2][0-9]|3[0-2])(\.[0-9]+)?G$ ]]; then
+            PrintStatus "  /dev/$part_name: Suitable for swap ($part_size)"
+            if [[ -z "$suggested_swap" ]]; then
+                suggested_swap="/dev/$part_name"
+            fi
+        # Detect root partition
+        elif [[ "$part_type" == "0fc63daf-8483-4772-8e79-3d69d8477de4" ]] || [[ "$part_fstype" =~ ^(ext[2-4]|xfs|btrfs)$ ]]; then
+            PrintStatus "  /dev/$part_name: Linux filesystem partition ($part_size)"
+            suggested_root="/dev/$part_name"
+        elif [[ -z "$part_fstype" || "$part_fstype" == "-" ]]; then
+            local size_num=$(echo "$part_size" | sed 's/[^0-9.]//g')
+            local size_unit=$(echo "$part_size" | sed 's/[0-9.]//g')
+            if [[ "$size_unit" == "T" ]] || [[ "$size_unit" == "G" && "${size_num%.*}" -ge 20 ]]; then
+                PrintStatus "  /dev/$part_name: Suitable for root ($part_size)"
+                if [[ -z "$suggested_root" ]]; then
+                    suggested_root="/dev/$part_name"
+                fi
+            fi
+        else
+            PrintStatus "  /dev/$part_name: $part_fstype partition ($part_size)"
+        fi
+    done <<< "$part_info"
+    
+    if [[ -n "$suggested_efi" && -n "$suggested_swap" && -n "$suggested_root" ]]; then
+        EFI_PART="$suggested_efi"
+        SWAP_PART="$suggested_swap"
+        ROOT_PART="$suggested_root"
         PrintStatus "Detected partitions:"
         PrintStatus "EFI: $EFI_PART"
         PrintStatus "Root: $ROOT_PART"
         PrintStatus "Swap: $SWAP_PART"
     else
-        PrintError "Could not detect all required partitions"
+        PrintError "Could not detect all required partitions intelligently"
         exit 1
     fi
 }

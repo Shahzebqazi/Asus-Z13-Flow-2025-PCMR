@@ -647,18 +647,7 @@ zfs list -t snapshot
 - **Poor battery life:** Switch to power-saver profile: `powerprofilesctl set power-saver` (45W TDP)
 - **Low performance on AC:** Switch to performance profile: `powerprofilesctl set performance` (120W+ TDP)
 
-## Testing & Quality Assurance
-
-### **Comprehensive Test Suite**
-This installation has been thoroughly tested with:
-- **14/14 Python tests** - Code quality and logic validation
-- **7/7 Unit tests** - Component functionality testing
-- **Script syntax validation** - Bash syntax checking
-- **Hardware compatibility** - All Z13 components verified
-- **Power management** - TDP control testing (7W-120W with dynamic power management)
-- **Desktop environments** - All 6 options tested
-- **Error handling** - Comprehensive error recovery
-- **Zen kernel** - Desktop-optimized performance validation
+## Quality Assurance
 
 ### **Production-Ready Quality**
 - **Input validation** - All user inputs validated

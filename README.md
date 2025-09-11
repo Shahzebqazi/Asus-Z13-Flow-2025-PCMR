@@ -179,9 +179,8 @@ cat Docs/Instructions.md
 - **Kernel:** Standard or Zen (configurable)
 - **File System:** ZFS, Btrfs, or ext4 (configurable)
 - **Desktop:** XFCE (default), others available
-- **Testing:** 9/9 tests passing
-- **Hardware:** ASUS ROG Flow Z13 (AMD Strix Halo AI Max+)
 - **Quality:** Production-ready with comprehensive error handling
+- **Hardware:** ASUS ROG Flow Z13 (AMD Strix Halo AI Max+)
 
 ---
 

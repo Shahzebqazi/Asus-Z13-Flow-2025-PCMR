@@ -86,12 +86,7 @@ graph TD
     W -->|Yes| U
     W -->|No| X[📞 Seek Help]
     
-    U --> U1[🧪 Run Test Suite]
-    U1 --> U2[14/14 Python Tests]
-    U1 --> U3[7/7 Unit Tests]
-    U2 --> U4[✅ All Tests Pass]
-    U3 --> U4
-    U4 --> Y[🚀 Enjoy Arch Linux!]
+    U --> Y[🚀 Enjoy Arch Linux!]
     
     style A fill:#e1f5fe
     style B fill:#fff3e0

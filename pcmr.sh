@@ -376,8 +376,8 @@ main() {
     INSTALLATION_STARTED=true
     
     # Load TUI display system
-    if [[ -f "$(dirname "$0")/tui_display.sh" ]]; then
-        source "$(dirname "$0")/tui_display.sh"
+    if [[ -f "$(dirname "$0")/Modules/tui_display.sh" ]]; then
+        source "$(dirname "$0")/Modules/tui_display.sh"
         TUI_ENABLED=true
         init_tui
         

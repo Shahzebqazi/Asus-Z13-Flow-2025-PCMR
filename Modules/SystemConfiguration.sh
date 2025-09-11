@@ -5,7 +5,8 @@ system_configuration() {
     PrintHeader "Configuring System"
     
     # Set default username if not provided
-    USERNAME=${USERNAME:-"archuser"}
+    USERNAME=${USERNAME:-$DEFAULT_USERNAME}
+    HOSTNAME=${HOSTNAME:-$DEFAULT_HOSTNAME}
     
     arch-chroot /mnt /bin/bash << EOF
 # Set timezone - prompt user if not already set
@@ -34,13 +35,13 @@ locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 
 # Set hostname
-echo "arch-z13" > /etc/hostname
+echo "$HOSTNAME" > /etc/hostname
 
 # Configure hosts file
 cat > /etc/hosts << EOH
 127.0.0.1   localhost
 ::1         localhost
-127.0.1.1   arch-z13.localdomain arch-z13
+127.0.1.1   $HOSTNAME.localdomain $HOSTNAME
 EOH
 
 # Enable services

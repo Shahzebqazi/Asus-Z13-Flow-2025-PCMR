@@ -40,10 +40,39 @@ WINDOWS_EXISTS=false
 FILESYSTEM_CREATED=""
 CURRENT_FILESYSTEM=""
 
-# User configuration
+# Configuration variables with defaults
 USERNAME=""
 HOSTNAME=""
 TIMEZONE=""
+
+# Default configuration values (loaded from defaults.conf)
+DEFAULT_USERNAME="archuser"
+DEFAULT_HOSTNAME="arch-z13"
+DEFAULT_TIMEZONE="UTC"
+DEFAULT_LOCALE="en_US.UTF-8"
+MIN_MEMORY_GB=2
+MIN_ROOT_PARTITION_GB=20
+SWAP_MIN_GB=8
+SWAP_MAX_GB=32
+TDP_EFFICIENT=7
+TDP_AI=45
+TDP_GAMING=93
+TDP_MAXIMUM=120
+BATTERY_START_THRESHOLD=40
+BATTERY_STOP_THRESHOLD=80
+TDP_MANAGER_PATH="/usr/local/bin/tdp-manager"
+CONFIG_DIR="/etc/z13"
+LOG_FILE="/var/log/z13-tdp.log"
+ENABLE_FRESH_REINSTALL=true
+ENABLE_DETACHED_MODE=true
+MAX_RETRY_ATTEMPTS=3
+CLEANUP_TIMEOUT=30
+
+# Installation state tracking
+INSTALLATION_PHASE=""
+RETRY_COUNT=0
+DETACHED_MODE=false
+DETACHED_PID=""
 
 # Standardized error handling functions
 HandleFatalError() {
@@ -162,6 +191,64 @@ For more information, see README.md
 EOF
 }
 
+# Function to parse JSON configuration files
+ParseJsonConfig() {
+    local config_file="$1"
+    local json_content
+    
+    if [[ ! -f "$config_file" ]]; then
+        HandleFatalError "Configuration file not found: $config_file"
+    fi
+    
+    # Read JSON content
+    json_content=$(cat "$config_file")
+    
+    # Simple JSON parsing using grep and sed (avoiding jq dependency)
+    # Parse system settings
+    USERNAME=$(echo "$json_content" | grep -o '"default_username"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_username"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    HOSTNAME=$(echo "$json_content" | grep -o '"default_hostname"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_hostname"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    TIMEZONE=$(echo "$json_content" | grep -o '"default_timezone"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_timezone"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    
+    # Parse installation settings
+    DUAL_BOOT_MODE=$(echo "$json_content" | grep -o '"dual_boot_mode"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"dual_boot_mode"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    USE_ZEN_KERNEL=$(echo "$json_content" | grep -o '"kernel_variant"[[:space:]]*:[[:space:]]*"zen"' >/dev/null && echo "true" || echo "false")
+    FILESYSTEM=$(echo "$json_content" | grep -o '"default_filesystem"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_filesystem"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    DESKTOP_ENVIRONMENT=$(echo "$json_content" | grep -o '"default_desktop"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_desktop"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    INSTALL_GAMING=$(echo "$json_content" | grep -o '"enable_gaming"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    ENABLE_SNAPSHOTS=$(echo "$json_content" | grep -o '"enable_snapshots"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    
+    # Parse power management
+    INSTALL_POWER_MGMT=$(echo "$json_content" | grep -o '"enable_power_management"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    
+    # Parse hardware settings
+    ENABLE_HARDWARE_FIXES=$(echo "$json_content" | grep -o '"enable_hardware_fixes"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    
+    # Parse recovery settings
+    ENABLE_ERROR_RECOVERY=$(echo "$json_content" | grep -o '"enable_error_recovery"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    ENABLE_FILESYSTEM_FALLBACK=$(echo "$json_content" | grep -o '"enable_filesystem_fallback"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    ENABLE_FRESH_REINSTALL=$(echo "$json_content" | grep -o '"enable_fresh_reinstall"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    ENABLE_DETACHED_MODE=$(echo "$json_content" | grep -o '"enable_detached_mode"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    
+    # Set defaults for empty values
+    USERNAME=${USERNAME:-$DEFAULT_USERNAME}
+    HOSTNAME=${HOSTNAME:-$DEFAULT_HOSTNAME}
+    TIMEZONE=${TIMEZONE:-$DEFAULT_TIMEZONE}
+    FILESYSTEM=${FILESYSTEM:-"zfs"}
+    DESKTOP_ENVIRONMENT=${DESKTOP_ENVIRONMENT:-"xfce"}
+}
+
+# Function to load default configuration
+LoadDefaultConfig() {
+    local defaults_file="$(dirname "$0")/Configs/defaults.conf"
+    
+    if [[ -f "$defaults_file" ]]; then
+        PrintStatus "Loading default configuration..."
+        ParseJsonConfig "$defaults_file"
+    else
+        PrintWarning "Default configuration not found, using hardcoded defaults"
+    fi
+}
+
 # Function to load configuration from file
 LoadConfig() {
     local config_file="$1"
@@ -172,8 +259,13 @@ LoadConfig() {
     
     PrintStatus "Loading configuration from: $config_file"
     
-    # Source the configuration file
-    source "$config_file"
+    # Check if it's a JSON configuration file
+    if grep -q '^[[:space:]]*{' "$config_file"; then
+        ParseJsonConfig "$config_file"
+    else
+        # Legacy shell script configuration
+        source "$config_file"
+    fi
     
     PrintStatus "Configuration loaded successfully"
 }
@@ -284,20 +376,237 @@ ValidatePrerequisites() {
     PrintStatus "Prerequisites validated successfully"
 }
 
-# Function to cleanup on failure
+# Function to offer recovery options
+OfferRecoveryOptions() {
+    local failure_phase="$1"
+    local error_message="$2"
+    
+    PrintError "Installation failed at phase: $failure_phase"
+    PrintError "Error: $error_message"
+    
+    if [[ "$ENABLE_FRESH_REINSTALL" == "true" ]]; then
+        echo ""
+        PrintStatus "Recovery Options:"
+        echo "1) Clean up and restart fresh installation"
+        echo "2) Try to repair and continue from current phase"
+        echo "3) Clean up and exit (manual recovery)"
+        echo ""
+        
+        read -p "Choose recovery option (1-3): " recovery_choice
+        
+        case "$recovery_choice" in
+            1)
+                PrintStatus "Starting fresh reinstall..."
+                PerformFullCleanup
+                ResetInstallationState
+                RestartInstallation
+                ;;
+            2)
+                if [[ "$RETRY_COUNT" -lt "$MAX_RETRY_ATTEMPTS" ]]; then
+                    PrintStatus "Attempting repair and retry..."
+                    ((RETRY_COUNT++))
+                    PerformPartialCleanup
+                    return 0  # Continue installation
+                else
+                    PrintError "Maximum retry attempts reached. Switching to fresh reinstall."
+                    PerformFullCleanup
+                    ResetInstallationState
+                    RestartInstallation
+                fi
+                ;;
+            3)
+                PrintStatus "Performing cleanup and exiting..."
+                PerformFullCleanup
+                exit 1
+                ;;
+            *)
+                PrintWarning "Invalid choice. Defaulting to fresh reinstall."
+                PerformFullCleanup
+                ResetInstallationState
+                RestartInstallation
+                ;;
+        esac
+    else
+        PerformFullCleanup
+        exit 1
+    fi
+}
+
+# Function to perform full cleanup for fresh reinstall
+PerformFullCleanup() {
+    PrintStatus "Performing comprehensive cleanup..."
+    
+    # Unmount filesystems with timeout
+    timeout "$CLEANUP_TIMEOUT" umount -R /mnt 2>/dev/null || {
+        PrintWarning "Forced unmount due to timeout"
+        umount -l /mnt 2>/dev/null || true
+    }
+    
+    # Destroy ZFS pool if created
+    if [[ "$FILESYSTEM_CREATED" == "zfs" ]]; then
+        zpool destroy -f zroot 2>/dev/null || true
+        PrintStatus "ZFS pool destroyed"
+    fi
+    
+    # Remove Btrfs subvolumes if created
+    if [[ "$FILESYSTEM_CREATED" == "btrfs" ]]; then
+        btrfs subvolume delete /mnt/@ 2>/dev/null || true
+        btrfs subvolume delete /mnt/@home 2>/dev/null || true
+        btrfs subvolume delete /mnt/@var 2>/dev/null || true
+        btrfs subvolume delete /mnt/@snapshots 2>/dev/null || true
+        PrintStatus "Btrfs subvolumes removed"
+    fi
+    
+    # Clean up any partial package installations
+    if [[ -d "/mnt/var/lib/pacman" ]]; then
+        rm -rf /mnt/var/lib/pacman/db.lck 2>/dev/null || true
+        PrintStatus "Package manager lock files removed"
+    fi
+    
+    # Reset swap if activated
+    if [[ -n "$SWAP_PART" ]] && swapon --show | grep -q "$SWAP_PART"; then
+        swapoff "$SWAP_PART" 2>/dev/null || true
+        PrintStatus "Swap deactivated"
+    fi
+    
+    PrintStatus "Full cleanup completed"
+}
+
+# Function to perform partial cleanup for retry
+PerformPartialCleanup() {
+    PrintStatus "Performing partial cleanup for retry..."
+    
+    # Only unmount and reset current phase state
+    umount -R /mnt 2>/dev/null || true
+    
+    # Reset filesystem state but keep partitions
+    FILESYSTEM_CREATED=""
+    CURRENT_FILESYSTEM=""
+    
+    PrintStatus "Partial cleanup completed"
+}
+
+# Function to reset installation state
+ResetInstallationState() {
+    INSTALLATION_STARTED=false
+    BASE_SYSTEM_INSTALLED=false
+    INSTALLATION_PHASE=""
+    RETRY_COUNT=0
+    FILESYSTEM_CREATED=""
+    CURRENT_FILESYSTEM=""
+    
+    # Reset partition variables but keep disk selection
+    ROOT_PART=""
+    SWAP_PART=""
+    # Keep EFI_PART and DISK_DEVICE for consistency
+    
+    PrintStatus "Installation state reset"
+}
+
+# Function to restart installation
+RestartInstallation() {
+    PrintStatus "Restarting installation process..."
+    
+    # Offer to change configuration
+    echo ""
+    read -p "Would you like to use a different configuration? (y/n): " change_config
+    
+    if [[ "$change_config" =~ ^[Yy] ]]; then
+        echo "Available configurations:"
+        echo "1) Zen.conf (Performance gaming setup)"
+        echo "2) Level1Techs.conf (Stable setup)"
+        echo "3) QuickStart.conf (Minimal setup)"
+        echo "4) Keep current configuration"
+        
+        read -p "Choose configuration (1-4): " config_choice
+        
+        case "$config_choice" in
+            1) LoadConfig "$(dirname "$0")/Configs/Zen.conf" ;;
+            2) LoadConfig "$(dirname "$0")/Configs/Level1Techs.conf" ;;
+            3) LoadConfig "$(dirname "$0")/Configs/QuickStart.conf" ;;
+            4) PrintStatus "Keeping current configuration" ;;
+            *) PrintWarning "Invalid choice, keeping current configuration" ;;
+        esac
+    fi
+    
+    # Restart from disk management phase
+    INSTALLATION_PHASE="disk_management"
+    INSTALLATION_STARTED=true
+    
+    # Re-run the main installation logic
+    CoreInstallation
+}
+
+# Enhanced cleanup on failure with recovery options
 CleanupOnFailure() {
     if [[ "$INSTALLATION_STARTED" == true ]]; then
-        PrintError "Installation failed. Cleaning up..."
+        OfferRecoveryOptions "$INSTALLATION_PHASE" "Installation script terminated unexpectedly"
+    fi
+}
+
+# Function to enable detached installation mode
+EnableDetachedMode() {
+    if [[ "$ENABLE_DETACHED_MODE" != "true" ]]; then
+        PrintWarning "Detached mode is not enabled in configuration"
+        return 1
+    fi
+    
+    PrintStatus "Enabling detached installation mode..."
+    PrintStatus "You can now safely detach from this session."
+    PrintStatus "The installation will continue in the background."
+    echo ""
+    PrintStatus "To reattach later, use: screen -r pcmr-install"
+    PrintStatus "To check progress, use: tail -f /tmp/pcmr-install.log"
+    echo ""
+    
+    # Start screen session for detached mode
+    screen -dmS pcmr-install bash -c "
+        # Redirect all output to log file
+        exec > >(tee -a /tmp/pcmr-install.log)
+        exec 2>&1
         
-        # Unmount filesystems
-        umount -R /mnt 2>/dev/null || true
+        # Continue installation
+        DETACHED_MODE=true
+        CoreInstallation
+    "
+    
+    DETACHED_PID=$(screen -list | grep pcmr-install | awk '{print $1}' | cut -d. -f1)
+    
+    if [[ -n "$DETACHED_PID" ]]; then
+        PrintStatus "Installation detached successfully (PID: $DETACHED_PID)"
+        PrintStatus "Session name: pcmr-install"
+        echo ""
+        PrintStatus "Commands to manage detached installation:"
+        echo "  Reattach:     screen -r pcmr-install"
+        echo "  Check status: tail -f /tmp/pcmr-install.log"
+        echo "  Kill session: screen -S pcmr-install -X quit"
+        echo ""
+        exit 0
+    else
+        PrintError "Failed to start detached session"
+        return 1
+    fi
+}
+
+# Function to check if running in detached mode
+IsDetachedMode() {
+    [[ "$DETACHED_MODE" == "true" ]] || [[ -n "$STY" ]]
+}
+
+# Function to offer detach option during installation
+OfferDetachOption() {
+    local phase="$1"
+    
+    if [[ "$ENABLE_DETACHED_MODE" == "true" ]] && [[ "$DETACHED_MODE" != "true" ]]; then
+        echo ""
+        PrintStatus "Current phase: $phase"
+        PrintStatus "You can detach from this installation to do other tasks."
+        echo ""
+        read -p "Would you like to detach now? (y/n): " detach_choice
         
-        # Destroy ZFS pool if created
-        if [[ "$FILESYSTEM_CREATED" == "zfs" ]]; then
-            zpool destroy -f zroot 2>/dev/null || true
+        if [[ "$detach_choice" =~ ^[Yy] ]]; then
+            EnableDetachedMode
         fi
-        
-        PrintError "Cleanup completed"
     fi
 }
 
@@ -311,6 +620,14 @@ CleanupAndFinish() {
     PrintStatus "Installation completed successfully!"
     PrintStatus "You can now reboot into your new Arch Linux installation"
     PrintStatus "Remember to remove the installation media before rebooting"
+    
+    # If in detached mode, provide reattach instructions
+    if IsDetachedMode; then
+        echo ""
+        PrintStatus "Installation completed in detached mode."
+        PrintStatus "You can now safely exit this screen session."
+        PrintStatus "Use 'screen -S pcmr-install -X quit' to close this session."
+    fi
 }
 
 # Main function
@@ -357,6 +674,9 @@ Main() {
         esac
     done
     
+    # Load default configuration first
+    LoadDefaultConfig
+    
     # Load configuration if requested
     if [[ "$use_config" == true ]]; then
         if [[ -z "$config_file" ]]; then
@@ -364,7 +684,7 @@ Main() {
         fi
         LoadConfig "$config_file"
     else
-        PrintStatus "Using standard installation mode (ignoring config file)"
+        PrintStatus "Using standard installation mode with defaults"
     fi
     
     # Auto-detect dual boot if not specified
@@ -389,6 +709,12 @@ Main() {
     ShowSummary
     
     INSTALLATION_STARTED=true
+    INSTALLATION_PHASE="initialization"
+    
+    # Offer detach option before starting intensive operations
+    if [[ "$ENABLE_DETACHED_MODE" == "true" ]]; then
+        OfferDetachOption "Pre-Installation Setup"
+    fi
     
     # Load TUI display system
     if [[ -f "$(dirname "$0")/Modules/TuiDisplay.sh" ]]; then

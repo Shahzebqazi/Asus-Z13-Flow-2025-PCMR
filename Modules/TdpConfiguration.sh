@@ -14,7 +14,7 @@ pacman -S --noconfirm powertop turbostat i7z
 pacman -S --noconfirm ryzenadj amdctl
 
 # Create TDP management script with dynamic power management
-cat > /usr/local/bin/tdp-manager << EOH
+cat > $TDP_MANAGER_PATH << EOH
 #!/bin/bash
 # TDP Manager for ASUS ROG Flow Z13 (2025) with Dynamic Power Management
 
@@ -68,15 +68,15 @@ set_tdp() {
 
 case "$1" in
     "efficient")
-        set_tdp 7
+        set_tdp $TDP_EFFICIENT
         echo "Efficient power profile activated (7W TDP - minimum power consumption)"
         ;;
     "ai")
-        set_tdp 45
+        set_tdp $TDP_AI
         echo "AI power profile activated (45W TDP, 48GB VRAM allocation)"
         ;;
     "gaming")
-        set_tdp 93
+        set_tdp $TDP_GAMING
         echo "Gaming power profile activated (93W TDP - maximum performance with stock charger)"
         ;;
     "max")
@@ -111,7 +111,7 @@ case "$1" in
 esac
 EOF
 
-chmod +x /usr/local/bin/tdp-manager
+chmod +x $TDP_MANAGER_PATH
 
 EOF
 

@@ -7,8 +7,8 @@ setup_zfs() {
     
     # Check available memory
     local mem_gb=$(free -g | awk 'NR==2{print $2}')
-    if [[ $mem_gb -lt 2 ]]; then
-        HandleRecoverableError "ZFS requires at least 2GB RAM. Available: ${mem_gb}GB"
+    if [[ $mem_gb -lt $MIN_MEMORY_GB ]]; then
+        HandleRecoverableError "ZFS requires at least ${MIN_MEMORY_GB}GB RAM. Available: ${mem_gb}GB"
     fi
     
     # Create swap

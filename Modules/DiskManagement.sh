@@ -143,7 +143,7 @@ setup_dual_boot_gpt() {
             local size_unit=$(echo "$part_size" | sed 's/[0-9.]//g')
             
             # Simple size comparison without bc
-            if [[ "$size_unit" == "T" ]] || [[ "$size_unit" == "G" && "${size_num%.*}" -ge 20 ]]; then
+            if [[ "$size_unit" == "T" ]] || [[ "$size_unit" == "G" && "${size_num%.*}" -ge $MIN_ROOT_PARTITION_GB ]]; then
                 PrintStatus "  /dev/$part_name: Large unformatted partition ($part_size) - SUITABLE FOR ROOT"
                 if [[ -z "$suggested_root" ]]; then
                     suggested_root="/dev/$part_name"
@@ -260,7 +260,7 @@ setup_dual_boot_new() {
         elif [[ -z "$part_fstype" || "$part_fstype" == "-" ]]; then
             local size_num=$(echo "$part_size" | sed 's/[^0-9.]//g')
             local size_unit=$(echo "$part_size" | sed 's/[0-9.]//g')
-            if [[ "$size_unit" == "T" ]] || [[ "$size_unit" == "G" && "${size_num%.*}" -ge 20 ]]; then
+            if [[ "$size_unit" == "T" ]] || [[ "$size_unit" == "G" && "${size_num%.*}" -ge $MIN_ROOT_PARTITION_GB ]]; then
                 PrintStatus "  /dev/$part_name: Suitable for root ($part_size)"
                 if [[ -z "$suggested_root" ]]; then
                     suggested_root="/dev/$part_name"
@@ -341,7 +341,7 @@ setup_single_boot() {
         elif [[ -z "$part_fstype" || "$part_fstype" == "-" ]]; then
             local size_num=$(echo "$part_size" | sed 's/[^0-9.]//g')
             local size_unit=$(echo "$part_size" | sed 's/[0-9.]//g')
-            if [[ "$size_unit" == "T" ]] || [[ "$size_unit" == "G" && "${size_num%.*}" -ge 20 ]]; then
+            if [[ "$size_unit" == "T" ]] || [[ "$size_unit" == "G" && "${size_num%.*}" -ge $MIN_ROOT_PARTITION_GB ]]; then
                 PrintStatus "  /dev/$part_name: Suitable for root ($part_size)"
                 if [[ -z "$suggested_root" ]]; then
                     suggested_root="/dev/$part_name"

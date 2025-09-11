@@ -18,7 +18,7 @@ base_installation() {
         pacstrap /mnt linux-zen linux-zen-headers
     fi
     
-    # Install additional packages
+    # Install additional packages (zsh should be available in live environment)
     pacstrap /mnt base-devel git curl wget
     
     # Generate fstab

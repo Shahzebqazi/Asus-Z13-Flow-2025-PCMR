@@ -1,13 +1,26 @@
-# Complete Arch Linux Installation Guide for ASUS ROG Flow Z13
+# Complete Arch Linux Installation Guide for ASUS ROG Flow Z13 (2025)
+**AMD Strix Halo AI Max+ Edition**
 
 ## Overview
-This comprehensive guide covers the complete process of installing Arch Linux on the ASUS ROG Flow Z13, from Windows preparation through final system configuration. The installation prioritizes:
-- **Maximum performance when plugged in**
-- **Hassle-free laptop and tablet use**
-- **Advanced power management with AMD Strix Halo TDP control (7W-120W with dynamic power management)**
-- **Zen kernel for desktop performance and low latency**
-- **Zsh shell for modern command-line experience**
-- **Dual-boot compatibility with Windows**
+This comprehensive guide covers the complete process of installing Arch Linux on the ASUS ROG Flow Z13 (2025) with AMD Strix Halo AI Max+ processor, from Windows preparation through final system configuration.
+
+### 🕒 **Estimated Installation Time**
+- **Automated Installation (pcmr.sh)**: **20-30 minutes**
+- **Manual Installation**: **45-75 minutes**
+- **Windows Preparation**: **30-60 minutes** (backup + partitioning)
+- **Total Time**: **1-2.5 hours** depending on method and system performance
+
+*Times vary based on internet speed, SSD performance, and user familiarity with the process.*
+
+## 🎯 **Installation Priorities**
+This installation optimizes for:
+- **2025 AI Max+ Hardware**: Native driver support for latest Strix Halo features
+- **180Hz Display**: Full refresh rate support with variable refresh rate (VRR)
+- **Advanced Power Management**: 7W tablet mode to 120W+ gaming mode with dynamic TDP
+- **Modern Shell Experience**: Zsh with Oh My Posh for enhanced productivity
+- **External Monitor Support**: Smart lid-close behavior when using external displays
+- **Dual-boot Compatibility**: Seamless Windows 11 integration
+- **Gaming Optimization**: Steam, Proton, and controller support out of the box
 
 ---
 
@@ -182,15 +195,15 @@ Choose your preferred installation method:
 
 ---
 
-## Method 1: Automated Installation (pcmr.sh)
+## Method 1: Automated Installation (pcmr.sh) ⭐ **Recommended**
 
-### Quick Start (Recommended)
+### 🚀 **Quick Start (20-30 minutes)**
 ```bash
 # Boot from Arch Linux USB and run:
 curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh | bash
 ```
 
-### Alternative: Download and Inspect Script First
+### 🔍 **Alternative: Download and Inspect Script First**
 ```bash
 # Download script for review
 curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh -o pcmr.sh
@@ -199,16 +212,32 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 chmod +x pcmr.sh
 nano pcmr.sh
 
-# Run when ready
-./pcmr.sh
+# Run when ready (with optional configuration)
+./pcmr.sh --zen-kernel  # Performance gaming setup
+# OR
+./pcmr.sh --config Configs/level1techs.conf  # Stable setup
+# OR
+./pcmr.sh --dual-boot-gpt  # Keep Windows dual-boot
 ```
 
-The script will prompt for configuration options including:
-- Desktop environment (XFCE, i3, GNOME, KDE, or minimal)
-- Power management profiles (7W-120W TDP control with dynamic power management)
-- Gaming setup (Steam/Proton)
-- Dual-boot configuration
-- ZFS snapshots for system recovery
+### 🎯 **What the Script Includes (2025 AI Max+ Optimized)**
+The automated installation provides:
+- **2025 AI Max+ Drivers**: AMD Strix Halo specific drivers and optimizations
+- **180Hz Display Support**: Full refresh rate with Variable Refresh Rate (VRR)
+- **External Monitor Intelligence**: Smart lid-close behavior detection
+- **Modern Shell**: Zsh with Oh My Posh and beautiful Zen theme
+- **Gaming Ready**: Steam, Proton, controller support optimized for Z13
+- **Power Profiles**: 7W-120W TDP control with battery care (40-80% charging)
+- **Hardware Fixes**: MediaTek WiFi stability, touchpad detection, audio tuning
+- **Tablet Mode Support**: Convertible laptop/tablet mode detection and optimization
+- **Dual-Boot Support**: Seamless Windows 11 integration with GRUB
+
+### 📊 **Real-Time Installation Monitoring**
+The script features a **10-line TUI** with:
+- **Rainbow Progress Bars**: Visual progress across 9 installation modules
+- **Configuration Indicator**: Shows if using CONFIG, MANUAL, or AUTO mode
+- **Live Log Feed**: Real-time installation status and progress
+- **Error Handling**: Automatic rollback with ZFS snapshots on failure
 
 ---
 
@@ -437,11 +466,42 @@ systemctl enable systemd-timesyncd
 
 ### Phase 4: Hardware-Specific Configurations
 
-#### 16. Fix Wi-Fi Stability (MediaTek MT7925e)
+#### 16. Install 2025 AI Max+ Specific Drivers and Optimizations
 ```bash
-# Create modprobe configuration to disable ASPM
+# AMD Strix Halo AI Max+ drivers with ROCm support
+pacman -S --noconfirm mesa xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon opencl-amd
+
+# MediaTek MT7925e Wi-Fi stability (Z13 2025 specific)
 mkdir -p /etc/modprobe.d
-echo "options mt7925e disable_aspm=1" > /etc/modprobe.d/mt7925e.conf
+cat > /etc/modprobe.d/mt7925e.conf << 'WIFI_CONF'
+# MediaTek MT7925e stability fixes for ASUS ROG Flow Z13 2025
+options mt7925e disable_aspm=1
+options mt7925e power_save=0
+WIFI_CONF
+
+# 180Hz display with VRR support
+mkdir -p /etc/X11/xorg.conf.d
+cat > /etc/X11/xorg.conf.d/20-z13-amdgpu.conf << 'DISPLAY_CONF'
+Section "Monitor"
+    Identifier "eDP-1"
+    # Z13 Flow 2025 AI Max+ native resolution and refresh rates
+    Option "PreferredMode" "1920x1200@180.00"
+    Option "TargetRefresh" "180"
+    # Enable variable refresh rate support
+    Option "VariableRefresh" "true"
+    Option "VRRPolicy" "favor_higher"
+EndSection
+DISPLAY_CONF
+
+# External monitor lid-close behavior
+mkdir -p /etc/systemd/logind.conf.d
+cat > /etc/systemd/logind.conf.d/z13-lid.conf << 'LID_CONF'
+[Login]
+# Allow closing lid when using external monitor without sleep/suspend
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+HandleLidSwitchDocked=ignore
+LID_CONF
 ```
 
 #### 17. Fix Touchpad Detection
@@ -465,12 +525,12 @@ EOF
 systemctl enable reload-hid_asus.service
 ```
 
-#### 18. Install Power Management Tools
+#### 18. Install 2025 AI Max+ Power Management
 ```bash
-# Install power management packages
-pacman -S power-profiles-daemon tlp
+# Install power management packages optimized for Strix Halo AI Max+
+pacman -S power-profiles-daemon tlp tlp-rdw
 
-# Install AUR helper for asusctl
+# Install ASUS ROG control tools for 2025 model
 pacman -S --needed git base-devel
 cd /tmp
 sudo -u sqazi git clone https://aur.archlinux.org/yay.git
@@ -478,26 +538,39 @@ cd yay
 sudo -u sqazi makepkg -si --noconfirm
 cd /
 
-# Install asusctl via AUR
-sudo -u sqazi yay -S --noconfirm asusctl
+# Install 2025 AI Max+ specific tools
+sudo -u sqazi yay -S --noconfirm asusctl supergfxctl rog-control-center asus-nb-ctrl
 
-# Enable power management services
-systemctl enable power-profiles-daemon
-systemctl enable tlp
+# Enable services
+systemctl enable power-profiles-daemon tlp supergfxd asusd
 
-# Configure TLP for maximum performance when plugged in
-cat >> /etc/tlp.conf << EOF
-# Maximum performance when plugged in
+# Configure TLP for Z13 2025 AI Max+ (7W-120W+ range)
+cat > /etc/tlp.conf << 'TLP_CONF'
+# TLP configuration optimized for ASUS ROG Flow Z13 2025 AI Max+
 TLP_DEFAULT_MODE=AC
+
+# CPU performance scaling for AI Max+ workloads
 CPU_SCALING_GOVERNOR_ON_AC=performance
 CPU_SCALING_GOVERNOR_ON_BAT=powersave
-CPU_ENERGY_PERF_POLICY_ON_AC=performance
-CPU_ENERGY_PERF_POLICY_ON_BAT=power
 CPU_MIN_PERF_ON_AC=0
 CPU_MAX_PERF_ON_AC=100
 CPU_MIN_PERF_ON_BAT=0
 CPU_MAX_PERF_ON_BAT=30
-EOF
+
+# AMD Strix Halo AI Max+ specific settings
+CPU_BOOST_ON_AC=1
+CPU_BOOST_ON_BAT=0
+PLATFORM_PROFILE_ON_AC=performance
+PLATFORM_PROFILE_ON_BAT=power-saver
+
+# Battery care for Z13's longevity (2025 model optimization)
+START_CHARGE_THRESH_BAT0=40
+STOP_CHARGE_THRESH_BAT0=80
+
+# MediaTek WiFi power management
+WIFI_PWR_ON_AC=off
+WIFI_PWR_ON_BAT=on
+TLP_CONF
 ```
 
 #### 19. Setup ZFS Snapshots

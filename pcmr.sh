@@ -45,23 +45,43 @@ USERNAME=""
 HOSTNAME=""
 TIMEZONE=""
 
-# Print functions
+# Print functions (TUI-aware)
 print_header() {
-    echo -e "${BLUE}================================${NC}"
-    echo -e "${BLUE}$1${NC}"
-    echo -e "${BLUE}================================${NC}"
+    local message="$1"
+    if [[ "$TUI_ENABLED" == true ]]; then
+        add_log_message "$message"
+    else
+        echo -e "${BLUE}================================${NC}"
+        echo -e "${BLUE}$message${NC}"
+        echo -e "${BLUE}================================${NC}"
+    fi
 }
 
 print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    local message="$1"
+    if [[ "$TUI_ENABLED" == true ]]; then
+        add_log_message "$message"
+    else
+        echo -e "${GREEN}[INFO]${NC} $message"
+    fi
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    local message="$1"
+    if [[ "$TUI_ENABLED" == true ]]; then
+        tui_warning "$message"
+    else
+        echo -e "${YELLOW}[WARN]${NC} $message"
+    fi
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    local message="$1"
+    if [[ "$TUI_ENABLED" == true ]]; then
+        tui_error "$message"
+    else
+        echo -e "${RED}[ERROR]${NC} $message"
+    fi
 }
 
 # Function to show help
@@ -231,6 +251,15 @@ validate_prerequisites() {
         exit 1
     fi
     
+    # Check if zsh is available (should be in Arch live environment)
+    if ! command -v zsh >/dev/null 2>&1; then
+        print_warning "Zsh not found in live environment. Installing during setup..."
+        ZSH_NEEDS_INSTALL=true
+    else
+        print_status "Zsh available in live environment"
+        ZSH_NEEDS_INSTALL=false
+    fi
+    
     # Check internet connection
     if ! ping -c 1 archlinux.org &> /dev/null; then
         print_error "No internet connection. Please connect to the internet and try again."
@@ -346,28 +375,45 @@ main() {
     
     INSTALLATION_STARTED=true
     
-    # Load required modules
-    load_module "disk_management"
-    load_module "filesystem_setup"
-    load_module "base_installation"
-    load_module "system_configuration"
-    load_module "Drivers_and_Hardware_Specific_Setup"
-    load_module "TDP_Configuration"
-    load_module "Steam_and_Gaming"
-    load_module "hardware_setup"
-    load_module "desktop_installation"
+    # Load TUI display system
+    if [[ -f "$(dirname "$0")/tui_display.sh" ]]; then
+        source "$(dirname "$0")/tui_display.sh"
+        TUI_ENABLED=true
+        init_tui
+        
+        # Set TUI mode based on how script was called
+        if [[ "$use_config" == true ]]; then
+            local config_basename=$(basename "$config_file" .conf)
+            tui_set_mode "CONFIG" "$config_basename"
+        elif [[ "$#" -eq 0 ]]; then
+            tui_set_mode "AUTO" ""
+        else
+            tui_set_mode "MANUAL" ""
+        fi
+    else
+        TUI_ENABLED=false
+        print_warning "TUI display not available, using standard output"
+    fi
     
-    # Run installation steps
-    disk_management_setup
-    filesystem_setup
-    base_installation
+    # Load and execute core installation system
+    load_module "core_installation"
+    
+    # Run core installation (which orchestrates all modules)
+    if [[ "$TUI_ENABLED" == true ]]; then
+        add_log_message "Starting PCMR Arch Linux Installation"
+        add_log_message "Configuration: ${DUAL_BOOT_MODE:-Auto} | $([ "$USE_ZEN_KERNEL" == true ] && echo "Zen" || echo "Standard") kernel"
+        add_log_message "Filesystem: $FILESYSTEM | Desktop: $DESKTOP_ENVIRONMENT"
+    fi
+    
+    core_installation
     BASE_SYSTEM_INSTALLED=true
-    system_configuration
-    drivers_and_hardware_setup
-    tdp_configuration_setup
-    steam_gaming_setup
-    hardware_setup
-    desktop_installation
+    
+    if [[ "$TUI_ENABLED" == true ]]; then
+        add_log_message "🎉 Installation completed successfully!"
+        add_log_message "System ready for first boot"
+        cleanup_tui
+    fi
+    
     cleanup_and_finish
 }
 

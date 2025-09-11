@@ -44,6 +44,8 @@ CURRENT_FILESYSTEM=""
 USERNAME=""
 HOSTNAME=""
 TIMEZONE=""
+ROOT_PASSWORD=""
+USER_PASSWORD=""
 
 # Default configuration values (loaded from defaults.conf)
 DEFAULT_USERNAME="archuser"
@@ -67,6 +69,10 @@ ENABLE_FRESH_REINSTALL=true
 ENABLE_DETACHED_MODE=true
 MAX_RETRY_ATTEMPTS=3
 CLEANUP_TIMEOUT=30
+ENABLE_SECURITY_HARDENING=true
+ENABLE_PERFORMANCE_OPTIMIZATION=true
+ENABLE_SYSTEM_MONITORING=true
+ENABLE_BACKUP_RECOVERY=true
 
 # Installation state tracking
 INSTALLATION_PHASE=""
@@ -442,6 +448,71 @@ InstallAurPackageWithVerification() {
     
     HandleRecoverableError "Failed to install AUR package $description after $max_attempts attempts"
     return 1
+}
+
+# Password collection functions
+CollectPasswords() {
+    PrintHeader "Password Setup"
+    PrintStatus "Setting up user passwords for automated installation"
+    
+    # Collect root password
+    while [[ -z "$ROOT_PASSWORD" ]]; do
+        echo -n "Enter root password: "
+        read -s ROOT_PASSWORD
+        echo
+        
+        if [[ ${#ROOT_PASSWORD} -lt 8 ]]; then
+            PrintWarning "Password must be at least 8 characters long"
+            ROOT_PASSWORD=""
+            continue
+        fi
+        
+        echo -n "Confirm root password: "
+        read -s root_confirm
+        echo
+        
+        if [[ "$ROOT_PASSWORD" != "$root_confirm" ]]; then
+            PrintWarning "Passwords do not match"
+            ROOT_PASSWORD=""
+        fi
+    done
+    
+    # Collect user password
+    while [[ -z "$USER_PASSWORD" ]]; do
+        echo -n "Enter password for user '$USERNAME': "
+        read -s USER_PASSWORD
+        echo
+        
+        if [[ ${#USER_PASSWORD} -lt 8 ]]; then
+            PrintWarning "Password must be at least 8 characters long"
+            USER_PASSWORD=""
+            continue
+        fi
+        
+        echo -n "Confirm password for user '$USERNAME': "
+        read -s user_confirm
+        echo
+        
+        if [[ "$USER_PASSWORD" != "$user_confirm" ]]; then
+            PrintWarning "Passwords do not match"
+            USER_PASSWORD=""
+        fi
+    done
+    
+    PrintStatus "Passwords collected successfully"
+}
+
+# Function to set passwords non-interactively
+SetPasswordsNonInteractive() {
+    local root_password="$1"
+    local user_password="$2"
+    local username="$3"
+    
+    # Set root password using chpasswd
+    echo "root:$root_password" | arch-chroot /mnt chpasswd
+    
+    # Set user password using chpasswd
+    echo "$username:$user_password" | arch-chroot /mnt chpasswd
 }
 
 # Function to show help
@@ -1014,6 +1085,9 @@ Main() {
     # Show installation summary
     ShowSummary
     
+    # Collect passwords for automated installation
+    CollectPasswords
+    
     INSTALLATION_STARTED=true
     INSTALLATION_PHASE="initialization"
     
@@ -1042,18 +1116,43 @@ Main() {
         PrintWarning "TUI display not available, using standard output"
     fi
     
-    # Load and execute core installation system
+    # Load and execute installation modules
+    LoadModule "DiskManagement"
+    LoadModule "FilesystemSetup"
     LoadModule "CoreInstallation"
     
-    # Run core installation (which orchestrates all modules)
+    # Run installation sequence
     if [[ "$TUI_ENABLED" == true ]]; then
         AddLogMessage "Starting PCMR Arch Linux Installation"
         AddLogMessage "Configuration: ${DUAL_BOOT_MODE:-Auto} | $([ "$USE_ZEN_KERNEL" == true ] && echo "Zen" || echo "Standard") kernel"
         AddLogMessage "Filesystem: $FILESYSTEM | Desktop: $DESKTOP_ENVIRONMENT"
     fi
     
+    # Execute installation phases
+    disk_management_setup
+    filesystem_setup
     CoreInstallation
     BASE_SYSTEM_INSTALLED=true
+    
+    # Load and run system configuration
+    LoadModule "SystemConfiguration"
+    system_configuration
+    
+    # Load and run security hardening
+    LoadModule "SecurityHardening"
+    security_hardening_setup
+    
+    # Load and run performance optimization
+    LoadModule "PerformanceOptimization"
+    performance_optimization_setup
+    
+    # Load and run system monitoring
+    LoadModule "SystemMonitoring"
+    system_monitoring_setup
+    
+    # Load and run backup and recovery system
+    LoadModule "BackupRecovery"
+    backup_recovery_setup
     
     if [[ "$TUI_ENABLED" == true ]]; then
         AddLogMessage "🎉 Installation completed successfully!"

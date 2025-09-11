@@ -14,7 +14,7 @@ InstallPackageGroupWithVerification powertop turbostat i7z chroot
 InstallPackageGroupWithVerification ryzenadj amdctl chroot
 
 # Create TDP management script with dynamic power management
-cat > $TDP_MANAGER_PATH << EOH
+cat > "$TDP_MANAGER_PATH" << EOH
 #!/bin/bash
 # TDP Manager for ASUS ROG Flow Z13 (2025) with Dynamic Power Management
 
@@ -28,20 +28,20 @@ detect_charger_wattage() {
         local voltage=$(cat /sys/class/power_supply/usb/voltage_now 2>/dev/null || echo "5000000")
         local wattage=$((current_max * voltage / 1000000000))
         
-        if [ $wattage -ge 100 ]; then
+        if [ "$wattage" -ge 100 ]; then
             max_tdp=120  # Stock charger or high-wattage USB-C
-        elif [ $wattage -ge 65 ]; then
+        elif [ "$wattage" -ge 65 ]; then
             max_tdp=100  # High-wattage USB-C charger
-        elif [ $wattage -ge 45 ]; then
+        elif [ "$wattage" -ge 45 ]; then
             max_tdp=65   # Medium USB-C charger
-        elif [ $wattage -ge 20 ]; then
+        elif [ "$wattage" -ge 20 ]; then
             max_tdp=45   # Low-wattage USB-C charger
         else
             max_tdp=7    # Battery only
         fi
     fi
     
-    echo $max_tdp
+    echo "$max_tdp"
 }
 
 # Function to set TDP with charger-aware limits
@@ -50,9 +50,9 @@ set_tdp() {
     local max_tdp=$(detect_charger_wattage)
     
     # Limit TDP based on available power
-    if [ $requested_tdp -gt $max_tdp ]; then
+    if [ "$requested_tdp" -gt "$max_tdp" ]; then
         echo "Requested TDP ${requested_tdp}W exceeds charger limit ${max_tdp}W. Limiting to ${max_tdp}W."
-        requested_tdp=$max_tdp
+        requested_tdp="$max_tdp"
     fi
     
     local tdp_mw=$((requested_tdp * 1000))
@@ -60,7 +60,7 @@ set_tdp() {
     
     # Set TDP using ryzenadj
     if command -v ryzenadj &> /dev/null; then
-        ryzenadj --stapm-limit=$tdp_mw --fast-limit=$tdp_mw --slow-limit=$tdp_mw
+        ryzenadj --stapm-limit="$tdp_mw" --fast-limit="$tdp_mw" --slow-limit="$tdp_mw"
     fi
     
     echo "TDP set to ${requested_tdp}W successfully (charger limit: ${max_tdp}W)"
@@ -68,20 +68,20 @@ set_tdp() {
 
 case "$1" in
     "efficient")
-        set_tdp $TDP_EFFICIENT
+        set_tdp "$TDP_EFFICIENT"
         echo "Efficient power profile activated (7W TDP - minimum power consumption)"
         ;;
     "ai")
-        set_tdp $TDP_AI
+        set_tdp "$TDP_AI"
         echo "AI power profile activated (45W TDP, 48GB VRAM allocation)"
         ;;
     "gaming")
-        set_tdp $TDP_GAMING
+        set_tdp "$TDP_GAMING"
         echo "Gaming power profile activated (93W TDP - maximum performance with stock charger)"
         ;;
     "max")
         local max_tdp=$(detect_charger_wattage)
-        set_tdp $max_tdp
+        set_tdp "$max_tdp"
         echo "Maximum power profile activated (${max_tdp}W TDP - limited by charger)"
         ;;
     "custom")
@@ -108,7 +108,7 @@ case "$1" in
         
         if [[ $attempts -eq $max_attempts ]]; then
             echo "Maximum attempts reached. Using default AI profile (45W)."
-            set_tdp $TDP_AI
+            set_tdp "$TDP_AI"
         fi
         ;;
     "status")
@@ -128,7 +128,7 @@ case "$1" in
 esac
 EOF
 
-chmod +x $TDP_MANAGER_PATH
+chmod +x "$TDP_MANAGER_PATH"
 
 EOF
 

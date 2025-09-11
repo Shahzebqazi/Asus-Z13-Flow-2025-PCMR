@@ -86,18 +86,16 @@ EOH
         # Enable services
         systemctl enable NetworkManager
 
-        # Set root password
-        echo 'Setting root password...'
-        passwd root
-
         # Create user using validated username
         useradd -m -G wheel -s /bin/zsh '$USERNAME'
-        echo 'Setting user password...'
-        passwd '$USERNAME'
 
         # Configure sudo
         echo '%wheel ALL=(ALL:ALL) ALL' >> /etc/sudoers
     "
+
+    # Set passwords non-interactively
+    PrintStatus "Setting passwords..."
+    SetPasswordsNonInteractive "$ROOT_PASSWORD" "$USER_PASSWORD" "$USERNAME"
 
     PrintStatus "System configuration completed"
 }

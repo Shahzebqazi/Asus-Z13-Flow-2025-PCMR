@@ -1,7 +1,7 @@
 # Base Installation Module
 # Handles base system installation
 
-BaseInstallation() {
+CoreInstallation() {
     PrintHeader "Installing Base System"
     
     # Update mirrorlist

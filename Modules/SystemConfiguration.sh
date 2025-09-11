@@ -4,7 +4,10 @@
 system_configuration() {
     print_header "Configuring System"
     
-    arch-chroot /mnt /bin/bash << 'EOF'
+    # Set default username if not provided
+    USERNAME=${USERNAME:-"archuser"}
+    
+    arch-chroot /mnt /bin/bash << EOF
 # Set timezone
 ln -sf /usr/share/zoneinfo/UTC /etc/localtime
 hwclock --systohc
@@ -32,9 +35,9 @@ echo "Setting root password..."
 passwd root
 
 # Create user
-useradd -m -G wheel -s /bin/zsh arch
+useradd -m -G wheel -s /bin/zsh $USERNAME
 echo "Setting user password..."
-passwd arch
+passwd $USERNAME
 
 # Configure sudo
 echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers

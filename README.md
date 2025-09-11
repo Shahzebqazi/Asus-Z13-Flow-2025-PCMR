@@ -40,10 +40,10 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 ### **Using Configuration Files**
 ```bash
 # Download and run with Level1Techs config
-./pcmr.sh --config Configs/level1techs.conf
+./pcmr.sh --config Configs/Level1Techs.conf
 
 # Run with Zen kernel optimization
-./pcmr.sh --zen-kernel --config Configs/zen.conf
+./pcmr.sh --zen-kernel --config Configs/Zen.conf
 
 # Dual-boot with existing Windows
 ./pcmr.sh --dual-boot-gpt --zen-kernel
@@ -62,13 +62,13 @@ Perfect for most users - uses optimal settings for Z13:
 Choose your setup with pre-configured profiles:
 ```bash
 # Performance gaming setup (Wendell's L1T config)
-./pcmr.sh --config Configs/level1techs.conf
+./pcmr.sh --config Configs/Level1Techs.conf
 
 # Maximum performance (Zen kernel + gaming)
-./pcmr.sh --config Configs/zen.conf --zen-kernel
+./pcmr.sh --config Configs/Zen.conf --zen-kernel
 
 # Minimal desktop setup
-./pcmr.sh --config Configs/quick-start.conf
+./pcmr.sh --config Configs/QuickStart.conf
 
 # Dual-boot with existing Windows
 ./pcmr.sh --dual-boot-gpt --zen-kernel
@@ -87,7 +87,7 @@ Want full control? Use standard mode and answer prompts:
 | **Gaming powerhouse** | `./pcmr.sh --config Configs/zen.conf` |
 | **Work laptop** | `./pcmr.sh --config Configs/level1techs.conf` |
 | **Keep Windows** | `./pcmr.sh --dual-boot-gpt --zen-kernel` |
-| **Fast minimal setup** | `./pcmr.sh --config Configs/quick-start.conf` |
+| **Fast minimal setup** | `./pcmr.sh --config Configs/QuickStart.conf` |
 | **Full control** | `./pcmr.sh --standard` |
 
 ## 🚨 **Critical Safety Features**

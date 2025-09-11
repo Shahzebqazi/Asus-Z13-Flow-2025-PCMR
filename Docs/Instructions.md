@@ -444,8 +444,8 @@ grub-mkconfig -o /boot/grub/grub.cfg
 passwd
 
 # Create user account
-useradd -m -G wheel -s /bin/zsh sqazi
-passwd sqazi
+useradd -m -G wheel -s /bin/zsh USERNAME
+passwd USERNAME
 
 # Enable sudo for wheel group
 EDITOR=nano visudo
@@ -533,13 +533,13 @@ pacman -S power-profiles-daemon tlp tlp-rdw
 # Install ASUS ROG control tools for 2025 model
 pacman -S --needed git base-devel
 cd /tmp
-sudo -u sqazi git clone https://aur.archlinux.org/yay.git
+sudo -u $USERNAME git clone https://aur.archlinux.org/yay.git
 cd yay
-sudo -u sqazi makepkg -si --noconfirm
+sudo -u $USERNAME makepkg -si --noconfirm
 cd /
 
 # Install 2025 AI Max+ specific tools
-sudo -u sqazi yay -S --noconfirm asusctl supergfxctl rog-control-center asus-nb-ctrl
+sudo -u $USERNAME yay -S --noconfirm asusctl supergfxctl rog-control-center asus-nb-ctrl
 
 # Enable services
 systemctl enable power-profiles-daemon tlp supergfxd asusd
@@ -602,8 +602,8 @@ pacman -S pulseaudio pulseaudio-alsa pavucontrol
 pacman -S network-manager-applet
 
 # Configure XFCE for tablet mode support
-mkdir -p /home/sqazi/.config/xfce4/xfconf/xfce-perchannel-xml
-chown -R sqazi:sqazi /home/sqazi/.config
+mkdir -p /home/$USERNAME/.config/xfce4/xfconf/xfce-perchannel-xml
+chown -R $USERNAME:$USERNAME /home/$USERNAME/.config
 ```
 
 #### 21. Install Gaming Setup (Optional)
@@ -616,7 +616,7 @@ pacman -Sy
 pacman -S steam gamemode mangohud
 
 # Install Proton-GE (enhanced Proton)
-sudo -u sqazi yay -S proton-ge-custom-bin
+sudo -u $USERNAME yay -S proton-ge-custom-bin
 ```
 
 #### 22. Final System Update

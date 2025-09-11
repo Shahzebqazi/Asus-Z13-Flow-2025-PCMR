@@ -46,7 +46,7 @@ HOSTNAME=""
 TIMEZONE=""
 
 # Print functions (TUI-aware)
-print_header() {
+PrintHeader() {
     local message="$1"
     if [[ "$TUI_ENABLED" == true ]]; then
         add_log_message "$message"
@@ -57,7 +57,7 @@ print_header() {
     fi
 }
 
-print_status() {
+PrintStatus() {
     local message="$1"
     if [[ "$TUI_ENABLED" == true ]]; then
         add_log_message "$message"
@@ -66,7 +66,7 @@ print_status() {
     fi
 }
 
-print_warning() {
+PrintWarning() {
     local message="$1"
     if [[ "$TUI_ENABLED" == true ]]; then
         tui_warning "$message"
@@ -75,7 +75,7 @@ print_warning() {
     fi
 }
 
-print_error() {
+PrintError() {
     local message="$1"
     if [[ "$TUI_ENABLED" == true ]]; then
         tui_error "$message"
@@ -85,7 +85,7 @@ print_error() {
 }
 
 # Function to show help
-show_help() {
+ShowHelp() {
     cat << EOF
 PCMR Arch Linux Installation Script
 ASUS ROG Flow Z13 (2025) - AMD Strix Halo AI Max+
@@ -110,8 +110,8 @@ EXAMPLES:
 CONFIGURATION:
     The script can load configuration from a file (default: Configs/pcmr-standard.conf)
     Available configurations:
-    - Configs/pcmr-standard.conf: Standard Z13 Flow configuration
-    - Configs/level1techs.conf: Level1Techs-inspired configuration
+    - Configs/PcmrStandard.conf: Standard Z13 Flow configuration
+    - Configs/Level1Techs.conf: Level1Techs-inspired configuration
 
 DUAL BOOT MODES:
     --dual-boot-gpt        For existing Windows UEFI installations
@@ -138,42 +138,42 @@ EOF
 }
 
 # Function to load configuration from file
-load_config() {
+LoadConfig() {
     local config_file="$1"
     
     if [[ ! -f "$config_file" ]]; then
-        print_error "Configuration file not found: $config_file"
+        PrintError "Configuration file not found: $config_file"
         exit 1
     fi
     
-    print_status "Loading configuration from: $config_file"
+    PrintStatus "Loading configuration from: $config_file"
     
     # Source the configuration file
     source "$config_file"
     
-    print_status "Configuration loaded successfully"
+    PrintStatus "Configuration loaded successfully"
 }
 
 # Function to detect dual boot mode automatically
-detect_dual_boot() {
-    print_status "Detecting existing dual boot configuration..."
+DetectDualBoot() {
+    PrintStatus "Detecting existing dual boot configuration..."
     
     # Check if we're in UEFI mode (required for Z13 Flow 2025)
     if [[ -d /sys/firmware/efi ]]; then
-        print_status "System is in UEFI mode"
+        PrintStatus "System is in UEFI mode"
         
         # Look for Windows EFI partition
         local efi_part=$(lsblk -rno NAME,PARTTYPE | grep -i "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" | cut -d' ' -f1)
         
         if [[ -n "$efi_part" ]]; then
-            print_status "Found existing EFI partition: $efi_part"
+            PrintStatus "Found existing EFI partition: $efi_part"
             
             # Check EFI partition size
             local efi_size=$(lsblk -b "/dev/$efi_part" | awk 'NR==2 {print $4}' | awk '{print int($1/1024/1024)}')
             if [[ $efi_size -lt 100 ]]; then
-                print_error "EFI partition is only ${efi_size}MB. This is too small for dual boot."
-                print_error "Please resize EFI partition to at least 100MB before continuing."
-                print_error "See: https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small"
+                PrintError "EFI partition is only ${efi_size}MB. This is too small for dual boot."
+                PrintError "Please resize EFI partition to at least 100MB before continuing."
+                PrintError "See: https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small"
                 exit 1
             fi
             
@@ -181,40 +181,40 @@ detect_dual_boot() {
             local windows_part=$(lsblk -rno NAME,FSTYPE | grep -i "ntfs" | head -1 | cut -d' ' -f1)
             
             if [[ -n "$windows_part" ]]; then
-                print_status "Found Windows installation, using --dual-boot-gpt mode"
+                PrintStatus "Found Windows installation, using --dual-boot-gpt mode"
                 DUAL_BOOT_MODE="gpt"
             else
-                print_status "No Windows found, using --dual-boot-new mode"
+                PrintStatus "No Windows found, using --dual-boot-new mode"
                 DUAL_BOOT_MODE="new"
             fi
         else
-            print_status "No EFI partition found, using --dual-boot-new mode"
+            PrintStatus "No EFI partition found, using --dual-boot-new mode"
             DUAL_BOOT_MODE="new"
         fi
     else
-        print_error "System is not in UEFI mode. Z13 Flow 2025 requires UEFI mode."
-        print_error "Please boot in UEFI mode and try again."
+        PrintError "System is not in UEFI mode. Z13 Flow 2025 requires UEFI mode."
+        PrintError "Please boot in UEFI mode and try again."
         exit 1
     fi
 }
 
 # Function to load modules
-load_module() {
+LoadModule() {
     local module_name="$1"
     local module_file="$MODULES_DIR/${module_name}.sh"
     
     if [[ -f "$module_file" ]]; then
-        print_status "Loading module: $module_name"
+        PrintStatus "Loading module: $module_name"
         source "$module_file"
     else
-        print_error "Module not found: $module_file"
+        PrintError "Module not found: $module_file"
         exit 1
     fi
 }
 
 # Function to show installation summary
-show_summary() {
-    print_header "Installation Summary"
+ShowSummary() {
+    PrintHeader "Installation Summary"
     
     echo "Configuration:"
     echo "  Dual Boot Mode: ${DUAL_BOOT_MODE:-"Auto-detect"}"
@@ -227,8 +227,8 @@ show_summary() {
     echo ""
     
     if [[ "$DUAL_BOOT_MODE" != "none" ]]; then
-        print_warning "Dual boot installation will preserve existing Windows installation"
-        print_warning "Make sure you have backed up important data"
+        PrintWarning "Dual boot installation will preserve existing Windows installation"
+        PrintWarning "Make sure you have backed up important data"
     fi
     
     echo "Press Enter to continue or Ctrl+C to cancel..."
@@ -236,43 +236,43 @@ show_summary() {
 }
 
 # Function to validate prerequisites
-validate_prerequisites() {
-    print_header "Validating Prerequisites"
+ValidatePrerequisites() {
+    PrintHeader "Validating Prerequisites"
     
     # Check if running as root
     if [[ $EUID -ne 0 ]]; then
-        print_error "This script must be run as root"
+        PrintError "This script must be run as root"
         exit 1
     fi
     
     # Check if we're in a chroot environment
     if [[ -f /.arch-chroot ]]; then
-        print_error "This script should not be run inside a chroot environment"
+        PrintError "This script should not be run inside a chroot environment"
         exit 1
     fi
     
     # Check if zsh is available (should be in Arch live environment)
     if ! command -v zsh >/dev/null 2>&1; then
-        print_warning "Zsh not found in live environment. Installing during setup..."
+        PrintWarning "Zsh not found in live environment. Installing during setup..."
         ZSH_NEEDS_INSTALL=true
     else
-        print_status "Zsh available in live environment"
+        PrintStatus "Zsh available in live environment"
         ZSH_NEEDS_INSTALL=false
     fi
     
     # Check internet connection
     if ! ping -c 1 archlinux.org &> /dev/null; then
-        print_error "No internet connection. Please connect to the internet and try again."
+        PrintError "No internet connection. Please connect to the internet and try again."
         exit 1
     fi
     
-    print_status "Prerequisites validated successfully"
+    PrintStatus "Prerequisites validated successfully"
 }
 
 # Function to cleanup on failure
-cleanup_on_failure() {
+CleanupOnFailure() {
     if [[ "$INSTALLATION_STARTED" == true ]]; then
-        print_error "Installation failed. Cleaning up..."
+        PrintError "Installation failed. Cleaning up..."
         
         # Unmount filesystems
         umount -R /mnt 2>/dev/null || true
@@ -282,26 +282,26 @@ cleanup_on_failure() {
             zpool destroy -f zroot 2>/dev/null || true
         fi
         
-        print_error "Cleanup completed"
+        PrintError "Cleanup completed"
     fi
 }
 
 # Function to cleanup and finish
-cleanup_and_finish() {
-    print_header "Finalizing Installation"
+CleanupAndFinish() {
+    PrintHeader "Finalizing Installation"
     
     # Unmount filesystems
     umount -R /mnt
     
-    print_status "Installation completed successfully!"
-    print_status "You can now reboot into your new Arch Linux installation"
-    print_status "Remember to remove the installation media before rebooting"
+    PrintStatus "Installation completed successfully!"
+    PrintStatus "You can now reboot into your new Arch Linux installation"
+    PrintStatus "Remember to remove the installation media before rebooting"
 }
 
 # Main function
-main() {
+Main() {
     # Set up error handling
-    trap cleanup_on_failure EXIT
+    trap CleanupOnFailure EXIT
     
     # Parse command line arguments
     local use_config=false
@@ -331,12 +331,12 @@ main() {
                 shift
                 ;;
             --help|-h)
-                show_help
+                ShowHelp
                 exit 0
                 ;;
             *)
-                print_error "Unknown option: $1"
-                show_help
+                PrintError "Unknown option: $1"
+                ShowHelp
                 exit 1
                 ;;
         esac
@@ -344,15 +344,15 @@ main() {
     
     # Load configuration if requested
     if [[ "$use_config" == true ]]; then
-        local config_file="${1:-Configs/pcmr-standard.conf}"
-        load_config "$config_file"
+        local config_file="${1:-Configs/PcmrStandard.conf}"
+        LoadConfig "$config_file"
     else
-        print_status "Using standard installation mode (ignoring config file)"
+        PrintStatus "Using standard installation mode (ignoring config file)"
     fi
     
     # Auto-detect dual boot if not specified
     if [[ -z "$DUAL_BOOT_MODE" ]]; then
-        detect_dual_boot
+        DetectDualBoot
     fi
     
     # Validate dual boot mode
@@ -361,61 +361,61 @@ main() {
             # Valid modes
             ;;
         *)
-            print_error "Invalid dual boot mode: $DUAL_BOOT_MODE"
-            print_error "Valid modes: gpt, new, none"
+            PrintError "Invalid dual boot mode: $DUAL_BOOT_MODE"
+            PrintError "Valid modes: gpt, new, none"
             exit 1
             ;;
     esac
     
     # Validate prerequisites
-    validate_prerequisites
+    ValidatePrerequisites
     
     # Show installation summary
-    show_summary
+    ShowSummary
     
     INSTALLATION_STARTED=true
     
     # Load TUI display system
-    if [[ -f "$(dirname "$0")/Modules/tui_display.sh" ]]; then
-        source "$(dirname "$0")/Modules/tui_display.sh"
+    if [[ -f "$(dirname "$0")/Modules/TuiDisplay.sh" ]]; then
+        source "$(dirname "$0")/Modules/TuiDisplay.sh"
         TUI_ENABLED=true
-        init_tui
+        InitTui
         
         # Set TUI mode based on how script was called
         if [[ "$use_config" == true ]]; then
             local config_basename=$(basename "$config_file" .conf)
-            tui_set_mode "CONFIG" "$config_basename"
+            TuiSetMode "CONFIG" "$config_basename"
         elif [[ "$#" -eq 0 ]]; then
-            tui_set_mode "AUTO" ""
+            TuiSetMode "AUTO" ""
         else
-            tui_set_mode "MANUAL" ""
+            TuiSetMode "MANUAL" ""
         fi
     else
         TUI_ENABLED=false
-        print_warning "TUI display not available, using standard output"
+        PrintWarning "TUI display not available, using standard output"
     fi
     
     # Load and execute core installation system
-    load_module "core_installation"
+    LoadModule "CoreInstallation"
     
     # Run core installation (which orchestrates all modules)
     if [[ "$TUI_ENABLED" == true ]]; then
-        add_log_message "Starting PCMR Arch Linux Installation"
-        add_log_message "Configuration: ${DUAL_BOOT_MODE:-Auto} | $([ "$USE_ZEN_KERNEL" == true ] && echo "Zen" || echo "Standard") kernel"
-        add_log_message "Filesystem: $FILESYSTEM | Desktop: $DESKTOP_ENVIRONMENT"
+        AddLogMessage "Starting PCMR Arch Linux Installation"
+        AddLogMessage "Configuration: ${DUAL_BOOT_MODE:-Auto} | $([ "$USE_ZEN_KERNEL" == true ] && echo "Zen" || echo "Standard") kernel"
+        AddLogMessage "Filesystem: $FILESYSTEM | Desktop: $DESKTOP_ENVIRONMENT"
     fi
     
-    core_installation
+    CoreInstallation
     BASE_SYSTEM_INSTALLED=true
     
     if [[ "$TUI_ENABLED" == true ]]; then
-        add_log_message "🎉 Installation completed successfully!"
-        add_log_message "System ready for first boot"
-        cleanup_tui
+        AddLogMessage "🎉 Installation completed successfully!"
+        AddLogMessage "System ready for first boot"
+        CleanupTui
     fi
     
-    cleanup_and_finish
+    CleanupAndFinish
 }
 
 # Run main function with all arguments
-main "$@"
+Main "$@"

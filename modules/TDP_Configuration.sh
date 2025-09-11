@@ -34,8 +34,8 @@ set_tdp() {
 
 case "$1" in
     "efficient")
-        set_tdp 45
-        echo "Efficient power profile activated (45W TDP)"
+        set_tdp 7
+        echo "Efficient power profile activated (7W TDP - minimum power consumption)"
         ;;
     "ai")
         set_tdp 70
@@ -45,8 +45,18 @@ case "$1" in
         set_tdp 120
         echo "Gaming power profile activated (120W+ TDP)"
         ;;
+    "custom")
+        read -p "Enter custom TDP value (7-120W): " custom_tdp
+        if [[ $custom_tdp -ge 7 && $custom_tdp -le 120 ]]; then
+            set_tdp $custom_tdp
+            echo "Custom TDP profile activated (${custom_tdp}W TDP)"
+        else
+            echo "Invalid TDP value. Please enter a value between 7 and 120."
+            exit 1
+        fi
+        ;;
     *)
-        echo "Usage: $0 {efficient|ai|gaming}"
+        echo "Usage: $0 {efficient|ai|gaming|custom}"
         exit 1
         ;;
 esac

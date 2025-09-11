@@ -4,7 +4,7 @@
 This comprehensive guide covers the complete process of installing Arch Linux on the ASUS ROG Flow Z13, from Windows preparation through final system configuration. The installation prioritizes:
 - **Maximum performance when plugged in**
 - **Hassle-free laptop and tablet use**
-- **Advanced power management with AMD Strix Halo TDP control (7W-54W)**
+- **Advanced power management with AMD Strix Halo TDP control (7W-120W with dynamic power management)**
 - **Zen kernel for desktop performance and low latency**
 - **Zsh shell for modern command-line experience**
 - **Dual-boot compatibility with Windows**
@@ -205,7 +205,7 @@ nano pcmr.sh
 
 The script will prompt for configuration options including:
 - Desktop environment (XFCE, i3, GNOME, KDE, or minimal)
-- Power management profiles (7W-54W TDP control)
+- Power management profiles (7W-120W TDP control with dynamic power management)
 - Gaming setup (Steam/Proton)
 - Dual-boot configuration
 - ZFS snapshots for system recovery
@@ -655,7 +655,7 @@ This installation has been thoroughly tested with:
 - **7/7 Unit tests** - Component functionality testing
 - **Script syntax validation** - Bash syntax checking
 - **Hardware compatibility** - All Z13 components verified
-- **Power management** - TDP control testing (7W-54W)
+- **Power management** - TDP control testing (7W-120W with dynamic power management)
 - **Desktop environments** - All 6 options tested
 - **Error handling** - Comprehensive error recovery
 - **Zen kernel** - Desktop-optimized performance validation

@@ -104,7 +104,7 @@ FILESYSTEMS:
 
 FEATURES:
     - AMD Strix Halo AI Max+ optimization
-               - Configurable TDP (7W-54W)
+               - Configurable TDP (7W-120W with dynamic power management)
     - Optimized fan curves
     - Steam and gaming support
     - Controller support (PS4/5, Xbox One/S)

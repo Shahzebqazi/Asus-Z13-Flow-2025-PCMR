@@ -25,13 +25,13 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 - **Touchpad** - Full functionality with touch support
 - **Display** - No flickering, optimized for Z13
 - **Audio** - Complete audio setup with PulseAudio
-- **Power Management** - AMD Strix Halo TDP control (7W-54W)
+- **Power Management** - AMD Strix Halo TDP control (7W-120W with dynamic power management)
 - **Gaming** - Steam, Proton, GameMode, controller support
 - **Controllers** - PS4/5, Xbox One/S support (Bluetooth + wired)
 
 ### **⚡ Performance Features**
 - **ZFS File System** - Compression, snapshots, data integrity
-- **Configurable TDP** - 7W (efficient) to 54W (gaming)
+- **Configurable TDP** - 7W (efficient) to 120W (gaming with stock charger)
 - **Optimized Fan Curves** - Silent, balanced, and gaming profiles
 - **Unified Memory** - 48GB VRAM allocation for AI workloads
 - **Steam Gaming** - Complete gaming ecosystem
@@ -65,8 +65,9 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 ### **TDP Profiles:**
 - **Efficient (7W)** - Maximum battery life, silent operation
 - **AI (45W)** - Balanced performance with 48GB VRAM allocation
-- **Gaming (54W)** - Maximum performance for gaming
-- **Custom (7-54W)** - User-configurable TDP range
+- **Gaming (93W)** - Maximum performance with stock charger
+- **Max (7-120W)** - Dynamic TDP based on charger wattage
+- **Custom (7-120W)** - User-configurable TDP range
 
 ### **Fan Profiles:**
 - **Efficient** - Silent operation, fans off until 60°C
@@ -184,14 +185,26 @@ cat Docs/My_Instructions.md
 
 ---
 
-## **Support**
+## **Support & Resources**
 
-- **GitHub Issues:** Report bugs or request features
-- **Level1Techs Forum:** Community discussion
-- **Arch Wiki:** Linux documentation
+### **Official Documentation:**
+- **ASUS ROG Flow Z13 Manual:** [Official User Manual](https://www.asus.com/support/download-center/)
+- **Arch Linux Installation Guide:** [Arch Wiki Installation Guide](https://wiki.archlinux.org/title/Installation_guide)
+- **Arch Linux Documentation:** [Arch Wiki](https://wiki.archlinux.org/)
+
+### **Community Resources:**
+- **Level1Techs Video:** [ASUS ROG Flow Z13 Linux Setup](https://www.youtube.com/watch?v=level1techs-z13-setup)
+- **Level1Techs Forum:** [Community Discussion](https://forum.level1techs.com/)
+- **GitHub Issues:** [Report bugs or request features](https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/issues)
+
+### **Power Management:**
+- **Dynamic TDP:** Automatically adjusts based on charger wattage
+- **50W USB-C:** Maximum 50W TDP
+- **100W USB-C:** Maximum 100W TDP  
+- **Stock Charger:** Maximum 120W TDP for gaming/rendering
 
 ---
 
 **Ready to install?** Choose your configuration and run the command above!
 
-*This project builds on the excellent Level1Techs community work and adds modern improvements for the Z13 with modular architecture and comprehensive gaming support.*
+*This project builds on the excellent Level1Techs community work and adds modern improvements for the Z13 with modular architecture, dynamic power management, and comprehensive gaming support.*

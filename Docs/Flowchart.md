@@ -21,7 +21,7 @@ graph TD
     G --> H[💿 Boot Arch Linux USB]
     
     H --> I{Choose Installation Method}
-    I -->|🤖 Automated| J[Run curl command<br/>Install.sh]
+    I -->|🤖 Automated| J[Run curl command<br/>pcmr.sh]
     I -->|📋 Manual| K[Follow Docs/My_Instructions.md]
     
     J --> L[⚙️ Configure Options]
@@ -48,8 +48,9 @@ graph TD
     N1 --> O
     
     O[⚡ Power Management]
-    O --> O1[Configure AMD Strix Halo TDP<br/>45W-120W+ Control]
-    O1 --> P
+    O --> O1[Configure AMD Strix Halo TDP<br/>7W-120W Dynamic Control]
+    O1 --> O2[Charger Detection<br/>Auto-adjust TDP limits]
+    O2 --> P
     
     P[📸 ZFS Snapshots?]
     P -->|Yes| P1[Setup ZFS Auto-Snapshots]

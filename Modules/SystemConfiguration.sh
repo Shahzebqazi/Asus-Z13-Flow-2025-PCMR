@@ -8,8 +8,24 @@ system_configuration() {
     USERNAME=${USERNAME:-"archuser"}
     
     arch-chroot /mnt /bin/bash << EOF
-# Set timezone
-ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+# Set timezone - prompt user if not already set
+if [[ -z "$TIMEZONE" ]]; then
+    echo "Available timezones (common examples):"
+    echo "  America/New_York (Eastern Time)"
+    echo "  America/Chicago (Central Time)" 
+    echo "  America/Denver (Mountain Time)"
+    echo "  America/Los_Angeles (Pacific Time)"
+    echo "  Europe/London (GMT/BST)"
+    echo "  Europe/Berlin (CET/CEST)"
+    echo "  Asia/Tokyo (JST)"
+    echo "  UTC (Coordinated Universal Time)"
+    echo ""
+    echo "For full list: ls /usr/share/zoneinfo/"
+    read -p "Enter your timezone (e.g., America/New_York): " TIMEZONE
+    TIMEZONE=${TIMEZONE:-UTC}
+fi
+
+ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
 hwclock --systohc
 
 # Configure locale

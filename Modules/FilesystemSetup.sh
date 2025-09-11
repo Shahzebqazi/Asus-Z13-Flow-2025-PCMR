@@ -16,7 +16,21 @@ setup_zfs() {
     mkswap "$SWAP_PART"
     swapon "$SWAP_PART"
     
+    # Load ZFS modules with error checking
+    PrintStatus "Loading ZFS kernel modules..."
+    if ! modprobe zfs; then
+        PrintError "Failed to load ZFS kernel modules"
+        return 1
+    fi
+    
+    # Verify ZFS is available
+    if ! command -v zpool >/dev/null 2>&1; then
+        PrintError "ZFS utilities not available after module loading"
+        return 1
+    fi
+    
     # Create ZFS pool
+    PrintStatus "Creating ZFS pool..."
     zpool create -f -o ashift=12 -o autotrim=on zroot "$ROOT_PART"
     
     # Create ZFS datasets

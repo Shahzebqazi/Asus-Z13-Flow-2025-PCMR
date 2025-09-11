@@ -151,7 +151,7 @@ If you prefer step-by-step control:
 
 ```bash
 # Follow the complete guide
-cat Docs/My_Instructions.md
+cat Docs/Instructions.md
 ```
 
 ---
@@ -163,7 +163,7 @@ cat Docs/My_Instructions.md
 - **Touchpad not working?** - Reboot after installation
 - **Can't boot?** - Check BIOS UEFI settings
 - **EFI partition too small?** - Resize to at least 100MB
-- **Need help?** - Check `Docs/My_Instructions.md`
+- **Need help?** - Check `Docs/Instructions.md`
 
 ### **Recovery:**
 - **ZFS Snapshots** - Rollback system changes instantly

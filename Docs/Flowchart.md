@@ -6,7 +6,7 @@
 
 ```mermaid
 graph TD
-    A[📖 Read Docs/My_Instructions.md] --> B{Have Dedicated SSD?}
+    A[📖 Read Docs/Instructions.md] --> B{Have Dedicated SSD?}
     B -->|Yes| C[🚀 Linux-Only Installation<br/>5-6s boot time]
     B -->|No| D[💾 Backup Windows System]
     
@@ -22,7 +22,7 @@ graph TD
     
     H --> I{Choose Installation Method}
     I -->|🤖 Automated| J[Run curl command<br/>pcmr.sh]
-    I -->|📋 Manual| K[Follow Docs/My_Instructions.md]
+    I -->|📋 Manual| K[Follow Docs/Instructions.md]
     
     J --> L[⚙️ Configure Options]
     K --> L

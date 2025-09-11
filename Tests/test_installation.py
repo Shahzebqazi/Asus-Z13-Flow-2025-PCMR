@@ -235,7 +235,7 @@ class ArchInstallationTests(unittest.TestCase):
     @classmethod
     def _generate_test_report(cls):
         """Generate comprehensive test report."""
-        report_path = Path("test_results/python_test_report.json")
+        report_path = Path("Test_Results/python_test_report.json")
         report_path.parent.mkdir(exist_ok=True)
         
         report = {

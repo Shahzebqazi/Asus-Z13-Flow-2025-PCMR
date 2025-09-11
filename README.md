@@ -11,7 +11,7 @@
 curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh | bash
 
 # Or with configuration:
-./pcmr.sh --config configs/pcmr-standard.conf
+./pcmr.sh --config Configs/pcmr-standard.conf
 ```
 
 **That's it!** The modular script handles everything automatically.
@@ -43,15 +43,15 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 ## **Configuration Options**
 
 ### **Available Configurations:**
-- **`configs/pcmr-standard.conf`** - Standard Z13 Flow configuration (ZFS, Omarchy)
-- **`configs/zen.conf`** - Performance-optimized with Zen kernel
-- **`configs/basic.conf`** - Stability-focused with standard kernel
-- **`configs/level1techs.conf`** - Level1Techs-inspired configuration
+- **`Configs/pcmr-standard.conf`** - Standard Z13 Flow configuration (ZFS, Omarchy)
+- **`Configs/zen.conf`** - Performance-optimized with Zen kernel
+- **`Configs/basic.conf`** - Stability-focused with standard kernel
+- **`Configs/level1techs.conf`** - Level1Techs-inspired configuration
 
 ### **Command Line Options:**
 ```bash
 ./pcmr.sh --help                    # Show help
-./pcmr.sh --config configs/zen.conf # Use specific configuration
+./pcmr.sh --config Configs/zen.conf # Use specific configuration
 ./pcmr.sh --standard                # Standard installation (ignore config)
 ./pcmr.sh --dual-boot-gpt           # Modern GPT UEFI dual boot
 ./pcmr.sh --dual-boot-new           # Fresh dual boot installation

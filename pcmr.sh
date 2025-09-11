@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Global variables
-MODULES_DIR="$(dirname "$0")/modules"
+MODULES_DIR="$(dirname "$0")/Modules"
 INSTALLATION_STARTED=false
 BASE_SYSTEM_INSTALLED=false
 
@@ -74,7 +74,7 @@ USAGE:
     $0 [OPTIONS]
 
 OPTIONS:
-    --config FILE          Load configuration from specified file (default: configs/pcmr-standard.conf)
+    --config FILE          Load configuration from specified file (default: Configs/pcmr-standard.conf)
     --standard             Ignore config file and use standard installation
     --dual-boot-gpt        Modern GPT UEFI dual boot mode (existing Windows)
     --dual-boot-new        Fresh install EFI for new Windows + Arch dual boot
@@ -82,16 +82,16 @@ OPTIONS:
     --help, -h             Show this help message
 
 EXAMPLES:
-    $0 --config configs/pcmr-standard.conf
+    $0 --config Configs/pcmr-standard.conf
     $0 --standard
     $0 --dual-boot-gpt --zen-kernel
     $0 --dual-boot-new
 
 CONFIGURATION:
-    The script can load configuration from a file (default: configs/pcmr-standard.conf)
+    The script can load configuration from a file (default: Configs/pcmr-standard.conf)
     Available configurations:
-    - configs/pcmr-standard.conf: Standard Z13 Flow configuration
-    - configs/level1techs.conf: Level1Techs-inspired configuration
+    - Configs/pcmr-standard.conf: Standard Z13 Flow configuration
+    - Configs/level1techs.conf: Level1Techs-inspired configuration
 
 DUAL BOOT MODES:
     --dual-boot-gpt        For existing Windows UEFI installations
@@ -315,7 +315,7 @@ main() {
     
     # Load configuration if requested
     if [[ "$use_config" == true ]]; then
-        local config_file="${1:-configs/pcmr-standard.conf}"
+        local config_file="${1:-Configs/pcmr-standard.conf}"
         load_config "$config_file"
     else
         print_status "Using standard installation mode (ignoring config file)"

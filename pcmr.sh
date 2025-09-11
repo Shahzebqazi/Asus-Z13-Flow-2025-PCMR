@@ -239,7 +239,7 @@ ParseJsonConfig() {
 
 # Function to load default configuration
 LoadDefaultConfig() {
-    local defaults_file="$(dirname "$0")/Configs/defaults.conf"
+    local defaults_file="$(dirname "$0")/Configs/Defaults.conf"
     
     if [[ -f "$defaults_file" ]]; then
         PrintStatus "Loading default configuration..."

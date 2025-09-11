@@ -138,6 +138,165 @@ PrintError() {
     fi
 }
 
+# Input validation functions
+ValidateNumericInput() {
+    local input="$1"
+    local min="$2"
+    local max="$3"
+    local description="$4"
+    
+    # Check if input is numeric
+    if ! [[ "$input" =~ ^[0-9]+$ ]]; then
+        HandleValidationError "Invalid $description: '$input' is not a number"
+        return 1
+    fi
+    
+    # Check range
+    if [[ $input -lt $min || $input -gt $max ]]; then
+        HandleValidationError "Invalid $description: '$input' must be between $min and $max"
+        return 1
+    fi
+    
+    return 0
+}
+
+ValidateChoice() {
+    local choice="$1"
+    local max_choice="$2"
+    local description="$3"
+    
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [[ $choice -lt 1 || $choice -gt $max_choice ]]; then
+        HandleValidationError "Invalid $description: Please enter a number between 1 and $max_choice"
+        return 1
+    fi
+    
+    return 0
+}
+
+ValidateYesNo() {
+    local input="$1"
+    local description="$2"
+    
+    if ! [[ "$input" =~ ^[YyNn]$ ]]; then
+        HandleValidationError "Invalid $description: Please enter 'y' for yes or 'n' for no"
+        return 1
+    fi
+    
+    return 0
+}
+
+ValidateTimezone() {
+    local timezone="$1"
+    
+    # Check if timezone exists
+    if [[ ! -f "/usr/share/zoneinfo/$timezone" ]]; then
+        HandleValidationError "Invalid timezone: '$timezone' does not exist"
+        return 1
+    fi
+    
+    return 0
+}
+
+ValidatePartition() {
+    local partition="$1"
+    local description="$2"
+    
+    # Check if partition exists as block device
+    if [[ ! -b "$partition" ]]; then
+        HandleValidationError "Invalid $description: '$partition' is not a valid block device"
+        return 1
+    fi
+    
+    return 0
+}
+
+ValidateHostname() {
+    local hostname="$1"
+    
+    # Check hostname format (RFC 1123)
+    if ! [[ "$hostname" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]]; then
+        HandleValidationError "Invalid hostname: '$hostname' must contain only letters, numbers, and hyphens, and be 1-63 characters long"
+        return 1
+    fi
+    
+    return 0
+}
+
+ValidateUsername() {
+    local username="$1"
+    
+    # Check username format (POSIX)
+    if ! [[ "$username" =~ ^[a-z_][a-z0-9_-]*$ ]] || [[ ${#username} -gt 32 ]]; then
+        HandleValidationError "Invalid username: '$username' must start with lowercase letter or underscore, contain only lowercase letters, numbers, underscore, and hyphen, and be max 32 characters"
+        return 1
+    fi
+    
+    # Check for reserved usernames
+    local reserved_users=("root" "bin" "daemon" "adm" "lp" "sync" "shutdown" "halt" "mail" "operator" "games" "ftp" "nobody" "systemd-network" "systemd-resolve" "systemd-timesync" "systemd-coredump" "uuidd" "dbus" "polkitd")
+    for reserved in "${reserved_users[@]}"; do
+        if [[ "$username" == "$reserved" ]]; then
+            HandleValidationError "Invalid username: '$username' is a reserved system username"
+            return 1
+        fi
+    done
+    
+    return 0
+}
+
+# Safe input reading functions with validation and retry
+ReadValidatedInput() {
+    local prompt="$1"
+    local validation_func="$2"
+    local max_attempts="${3:-3}"
+    local default_value="$4"
+    local input=""
+    local attempts=0
+    
+    while [[ $attempts -lt $max_attempts ]]; do
+        if [[ -n "$default_value" ]]; then
+            read -p "$prompt (default: $default_value): " input
+            input="${input:-$default_value}"
+        else
+            read -p "$prompt: " input
+        fi
+        
+        if [[ -n "$validation_func" ]] && command -v "$validation_func" >/dev/null 2>&1; then
+            if $validation_func "$input"; then
+                echo "$input"
+                return 0
+            fi
+        elif [[ -z "$validation_func" ]]; then
+            # No validation function provided, just return input
+            echo "$input"
+            return 0
+        fi
+        
+        ((attempts++))
+        if [[ $attempts -lt $max_attempts ]]; then
+            PrintWarning "Please try again ($((max_attempts - attempts)) attempts remaining)"
+        fi
+    done
+    
+    HandleFatalError "Maximum validation attempts reached for: $prompt"
+}
+
+ReadValidatedChoice() {
+    local prompt="$1"
+    local max_choice="$2"
+    local description="$3"
+    local max_attempts="${4:-3}"
+    
+    ReadValidatedInput "$prompt" "ValidateChoice $max_choice \"$description\"" "$max_attempts"
+}
+
+ReadValidatedYesNo() {
+    local prompt="$1"
+    local description="$2"
+    local max_attempts="${3:-3}"
+    
+    ReadValidatedInput "$prompt" "ValidateYesNo \"$description\"" "$max_attempts"
+}
+
 # Function to show help
 ShowHelp() {
     cat << EOF

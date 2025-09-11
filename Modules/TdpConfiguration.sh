@@ -85,13 +85,30 @@ case "$1" in
         echo "Maximum power profile activated (${max_tdp}W TDP - limited by charger)"
         ;;
     "custom")
-        read -p "Enter custom TDP value (7-120W): " custom_tdp
-        if [[ $custom_tdp -ge 7 && $custom_tdp -le 120 ]]; then
-            set_tdp $custom_tdp
-            echo "Custom TDP profile activated (${custom_tdp}W TDP)"
-        else
-            echo "Invalid TDP value. Please enter a value between 7 and 120."
-            HandleValidationError "Invalid TDP value. Please enter a value between 7 and 120."
+        local custom_tdp=""
+        local attempts=0
+        local max_attempts=3
+        
+        while [[ $attempts -lt $max_attempts ]]; do
+            read -p "Enter custom TDP value (7-120W): " custom_tdp
+            
+            # Validate TDP input
+            if [[ "$custom_tdp" =~ ^[0-9]+$ ]] && [[ $custom_tdp -ge 7 && $custom_tdp -le 120 ]]; then
+                set_tdp $custom_tdp
+                echo "Custom TDP profile activated (${custom_tdp}W TDP)"
+                break
+            else
+                echo "Invalid TDP value. Please enter a number between 7 and 120."
+                ((attempts++))
+                if [[ $attempts -lt $max_attempts ]]; then
+                    echo "Please try again ($((max_attempts - attempts)) attempts remaining)"
+                fi
+            fi
+        done
+        
+        if [[ $attempts -eq $max_attempts ]]; then
+            echo "Maximum attempts reached. Using default AI profile (45W)."
+            set_tdp $TDP_AI
         fi
         ;;
     "status")

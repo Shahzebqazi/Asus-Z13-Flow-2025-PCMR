@@ -20,11 +20,27 @@ detect_disk() {
             echo "  $((i+1)). /dev/${disks[i]}"
         done
         
-        read -p "Select disk (1-${#disks[@]}): " choice
-        if [[ $choice -ge 1 && $choice -le ${#disks[@]} ]]; then
-            DISK_DEVICE="/dev/${disks[$((choice-1))]}"
-        else
-            HandleValidationError "Invalid selection"
+        local choice=""
+        local attempts=0
+        local max_attempts=3
+        
+        while [[ $attempts -lt $max_attempts ]]; do
+            read -p "Select disk (1-${#disks[@]}): " choice
+            
+            if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 && $choice -le ${#disks[@]} ]]; then
+                DISK_DEVICE="/dev/${disks[$((choice-1))]}"
+                break
+            else
+                echo "Invalid selection. Please enter a number between 1 and ${#disks[@]}."
+                ((attempts++))
+                if [[ $attempts -lt $max_attempts ]]; then
+                    echo "Please try again ($((max_attempts - attempts)) attempts remaining)"
+                fi
+            fi
+        done
+        
+        if [[ $attempts -eq $max_attempts ]]; then
+            HandleValidationError "Maximum validation attempts reached for disk selection"
         fi
     fi
     
@@ -172,7 +188,28 @@ setup_dual_boot_gpt() {
     fi
     
     echo ""
-    read -p "Accept suggestions? (y/n): " accept_suggestions
+    local accept_suggestions=""
+    local attempts=0
+    local max_attempts=3
+    
+    while [[ $attempts -lt $max_attempts ]]; do
+        read -p "Accept suggestions? (y/n): " accept_suggestions
+        
+        if [[ "$accept_suggestions" =~ ^[YyNn]$ ]]; then
+            break
+        else
+            echo "Invalid input. Please enter 'y' for yes or 'n' for no."
+            ((attempts++))
+            if [[ $attempts -lt $max_attempts ]]; then
+                echo "Please try again ($((max_attempts - attempts)) attempts remaining)"
+            fi
+        fi
+    done
+    
+    if [[ $attempts -eq $max_attempts ]]; then
+        PrintWarning "Maximum attempts reached. Defaulting to manual selection."
+        accept_suggestions="n"
+    fi
     
     if [[ "$accept_suggestions" =~ ^[Yy] ]] && [[ -n "$suggested_swap" && -n "$suggested_root" ]]; then
         SWAP_PART="$suggested_swap"
@@ -187,18 +224,57 @@ setup_dual_boot_gpt() {
         lsblk "$DISK_DEVICE"
         echo ""
         
-        read -p "Enter swap partition (e.g., /dev/nvme0n1p5): " manual_swap
-        read -p "Enter root partition (e.g., /dev/nvme0n1p6): " manual_root
+        local manual_swap=""
+        local manual_root=""
+        local attempts=0
+        local max_attempts=3
         
-        if [[ -b "$manual_swap" && -b "$manual_root" ]]; then
-            SWAP_PART="$manual_swap"
-            ROOT_PART="$manual_root"
-            PrintStatus "Using manual selection:"
-            PrintStatus "Swap: $SWAP_PART"
-            PrintStatus "Root: $ROOT_PART"
-        else
-            HandleValidationError "Invalid partition selection"
+        # Validate swap partition
+        while [[ $attempts -lt $max_attempts ]]; do
+            read -p "Enter swap partition (e.g., /dev/nvme0n1p5): " manual_swap
+            
+            if [[ -b "$manual_swap" ]]; then
+                break
+            else
+                echo "Invalid swap partition: '$manual_swap' is not a valid block device."
+                ((attempts++))
+                if [[ $attempts -lt $max_attempts ]]; then
+                    echo "Please try again ($((max_attempts - attempts)) attempts remaining)"
+                fi
+            fi
+        done
+        
+        if [[ $attempts -eq $max_attempts ]]; then
+            HandleValidationError "Maximum validation attempts reached for swap partition selection"
         fi
+        
+        # Reset attempts for root partition
+        attempts=0
+        
+        # Validate root partition
+        while [[ $attempts -lt $max_attempts ]]; do
+            read -p "Enter root partition (e.g., /dev/nvme0n1p6): " manual_root
+            
+            if [[ -b "$manual_root" ]]; then
+                break
+            else
+                echo "Invalid root partition: '$manual_root' is not a valid block device."
+                ((attempts++))
+                if [[ $attempts -lt $max_attempts ]]; then
+                    echo "Please try again ($((max_attempts - attempts)) attempts remaining)"
+                fi
+            fi
+        done
+        
+        if [[ $attempts -eq $max_attempts ]]; then
+            HandleValidationError "Maximum validation attempts reached for root partition selection"
+        fi
+        
+        SWAP_PART="$manual_swap"
+        ROOT_PART="$manual_root"
+        PrintStatus "Using manual selection:"
+        PrintStatus "Swap: $SWAP_PART"
+        PrintStatus "Root: $ROOT_PART"
     fi
 }
 

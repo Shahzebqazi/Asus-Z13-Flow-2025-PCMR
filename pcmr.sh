@@ -344,7 +344,9 @@ Main() {
     
     # Load configuration if requested
     if [[ "$use_config" == true ]]; then
-        local config_file="${1:-Configs/PcmrStandard.conf}"
+        if [[ -z "$config_file" ]]; then
+            config_file="Configs/Zen.conf"
+        fi
         LoadConfig "$config_file"
     else
         PrintStatus "Using standard installation mode (ignoring config file)"

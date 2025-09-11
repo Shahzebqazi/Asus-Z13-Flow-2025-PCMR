@@ -319,6 +319,7 @@ z13-tdp list
 - [Level1Techs Z13 Linux Guide](https://forum.level1techs.com/t/flow-z13-asus-setup-on-linux-may-2025-wip/229551)
 - [Wendell's Ultimate Arch Guide](https://forum.level1techs.com/t/the-ultimate-arch-secureboot-guide-for-ryzen-ai-max-ft-hp-g1a-128gb-8060s-monster-laptop/230652)
 - [Arch Linux Installation Guide](https://wiki.archlinux.org/title/Installation_guide)
+- [Dual Boot with Windows - EFI System Partition](https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small)
 - [ZFS on Linux](https://openzfs.github.io/openzfs-docs/)
 
 ---

@@ -39,6 +39,44 @@ pacman -S --noconfirm bluez bluez-utils blueman
 print_status "Installing additional hardware support..."
 pacman -S --noconfirm lm_sensors hdparm smartmontools acpi acpid
 
+# Display stability fixes and 180Hz support
+print_status "Configuring display stability and 180Hz support..."
+cat > /etc/X11/xorg.conf.d/20-amdgpu.conf << 'EOF'
+Section "Device"
+    Identifier "AMD"
+    Driver "amdgpu"
+    Option "DRI" "3"
+    Option "TearFree" "true"
+    Option "VariableRefresh" "true"
+    Option "EnablePageFlip" "true"
+    Option "AccelMethod" "glamor"
+EndSection
+
+Section "Monitor"
+    Identifier "eDP-1"
+    Option "PreferredMode" "1920x1200@180.00"
+    Option "TargetRefresh" "180"
+EndSection
+
+Section "Screen"
+    Identifier "Screen0"
+    Monitor "eDP-1"
+    Device "AMD"
+    SubSection "Display"
+        Modes "1920x1200@180.00" "1920x1200@120.00" "1920x1200@60.00"
+    EndSubSection
+EndSection
+EOF
+
+# Configure Wayland for better variable refresh rate support
+print_status "Configuring Wayland for variable refresh rate..."
+cat > /etc/environment << 'EOF'
+# Enable Wayland for better variable refresh rate support
+XDG_SESSION_TYPE=wayland
+WLR_DRM_NO_MODIFIERS=1
+WLR_DRM_DEVICES=/dev/dri/card0
+EOF
+
 EOF
 
     print_status "Z13 Flow 2025 drivers installation completed"

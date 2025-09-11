@@ -25,13 +25,13 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 - **Touchpad** - Full functionality with touch support
 - **Display** - No flickering, optimized for Z13
 - **Audio** - Complete audio setup with PulseAudio
-- **Power Management** - AMD Strix Halo TDP control (7W-120W+)
+- **Power Management** - AMD Strix Halo TDP control (7W-54W)
 - **Gaming** - Steam, Proton, GameMode, controller support
 - **Controllers** - PS4/5, Xbox One/S support (Bluetooth + wired)
 
 ### **⚡ Performance Features**
 - **ZFS File System** - Compression, snapshots, data integrity
-- **Configurable TDP** - 7W (efficient) to 120W+ (gaming)
+- **Configurable TDP** - 7W (efficient) to 54W (gaming)
 - **Optimized Fan Curves** - Silent, balanced, and gaming profiles
 - **Unified Memory** - 48GB VRAM allocation for AI workloads
 - **Steam Gaming** - Complete gaming ecosystem
@@ -43,7 +43,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 ## **Configuration Options**
 
 ### **Available Configurations:**
-- **`configs/pcmr-standard.conf`** - Standard Z13 Flow configuration (ZFS, XFCE)
+- **`configs/pcmr-standard.conf`** - Standard Z13 Flow configuration (ZFS, Omarchy)
 - **`configs/zen.conf`** - Performance-optimized with Zen kernel
 - **`configs/basic.conf`** - Stability-focused with standard kernel
 - **`configs/level1techs.conf`** - Level1Techs-inspired configuration
@@ -64,9 +64,9 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 
 ### **TDP Profiles:**
 - **Efficient (7W)** - Maximum battery life, silent operation
-- **AI (70W)** - Balanced performance with 48GB VRAM allocation
-- **Gaming (120W+)** - Maximum performance for gaming
-- **Custom (7-120W)** - User-configurable TDP range
+- **AI (45W)** - Balanced performance with 48GB VRAM allocation
+- **Gaming (54W)** - Maximum performance for gaming
+- **Custom (7-54W)** - User-configurable TDP range
 
 ### **Fan Profiles:**
 - **Efficient** - Silent operation, fans off until 60°C
@@ -126,8 +126,8 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 ## **Desktop Environments**
 
 ### **Supported:**
-1. **XFCE** - User-friendly traditional desktop (default)
-2. **Omarchy** - Tiling window manager
+1. **Omarchy** - Tiling window manager (default)
+2. **XFCE** - User-friendly traditional desktop
 3. **i3** - Advanced tiling window manager
 4. **GNOME** - Modern full desktop
 5. **KDE Plasma** - Feature-rich desktop

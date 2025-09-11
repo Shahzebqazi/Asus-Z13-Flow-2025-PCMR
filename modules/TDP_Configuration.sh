@@ -38,20 +38,20 @@ case "$1" in
         echo "Efficient power profile activated (7W TDP - minimum power consumption)"
         ;;
     "ai")
-        set_tdp 70
-        echo "AI power profile activated (70W TDP, 48GB VRAM allocation)"
+        set_tdp 45
+        echo "AI power profile activated (45W TDP, 48GB VRAM allocation)"
         ;;
     "gaming")
-        set_tdp 120
-        echo "Gaming power profile activated (120W+ TDP)"
+        set_tdp 54
+        echo "Gaming power profile activated (54W TDP - maximum for tablet form factor)"
         ;;
     "custom")
-        read -p "Enter custom TDP value (7-120W): " custom_tdp
-        if [[ $custom_tdp -ge 7 && $custom_tdp -le 120 ]]; then
+        read -p "Enter custom TDP value (7-54W): " custom_tdp
+        if [[ $custom_tdp -ge 7 && $custom_tdp -le 54 ]]; then
             set_tdp $custom_tdp
             echo "Custom TDP profile activated (${custom_tdp}W TDP)"
         else
-            echo "Invalid TDP value. Please enter a value between 7 and 120."
+            echo "Invalid TDP value. Please enter a value between 7 and 54."
             exit 1
         fi
         ;;

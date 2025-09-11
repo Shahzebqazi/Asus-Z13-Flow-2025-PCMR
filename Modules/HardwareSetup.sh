@@ -5,13 +5,13 @@ hardware_setup() {
     PrintHeader "Hardware Setup"
     
     arch-chroot /mnt /bin/zsh << 'EOF'
-# Install power management tools
+# Install power management tools with verification
 PrintStatus "Installing power management tools..."
-pacman -S --noconfirm tlp power-profiles-daemon
+InstallPackageGroupWithVerification tlp power-profiles-daemon chroot
 
-# Install ASUS control tools
+# Install ASUS control tools with verification
 PrintStatus "Installing ASUS control tools..."
-pacman -S --noconfirm asusctl
+InstallPackageWithVerification asusctl "ASUS Control Tools" chroot
 
 # Configure TLP
 PrintStatus "Configuring TLP..."

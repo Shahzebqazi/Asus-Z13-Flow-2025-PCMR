@@ -36,15 +36,15 @@ install_omarchy() {
     PrintStatus "Installing Omarchy tiling window manager..."
     
     arch-chroot /mnt /bin/zsh << 'EOF'
-# Install X11 and display manager
-pacman -S --noconfirm xorg-server xorg-xinit
-pacman -S --noconfirm lightdm lightdm-gtk-greeter
-pacman -S --noconfirm firefox alacritty thunar
-pacman -S --noconfirm pulseaudio pulseaudio-alsa pavucontrol
-pacman -S --noconfirm network-manager-applet
+# Install X11 and display manager with verification
+InstallPackageGroupWithVerification xorg-server xorg-xinit chroot
+InstallPackageGroupWithVerification lightdm lightdm-gtk-greeter chroot
+InstallPackageGroupWithVerification firefox alacritty thunar chroot
+InstallPackageGroupWithVerification pulseaudio pulseaudio-alsa pavucontrol chroot
+InstallPackageWithVerification network-manager-applet "Network Manager Applet" chroot
 
-# Install Omarchy from AUR
-pacman -S --noconfirm --needed git base-devel
+# Install build tools for AUR packages
+InstallPackageGroupWithVerification git base-devel chroot
 cd /tmp
 git clone https://aur.archlinux.org/omarchy.git
 cd omarchy
@@ -63,14 +63,14 @@ install_xfce() {
     PrintStatus "Installing XFCE desktop environment..."
     
     arch-chroot /mnt /bin/zsh << 'EOF'
-# Install X11 and display manager
-pacman -S --noconfirm xorg-server xorg-xinit
-pacman -S --noconfirm lightdm lightdm-gtk-greeter
+# Install X11 and display manager with verification
+InstallPackageGroupWithVerification xorg-server xorg-xinit chroot
+InstallPackageGroupWithVerification lightdm lightdm-gtk-greeter chroot
 
-# Install XFCE
-pacman -S --noconfirm xfce4 xfce4-goodies
-pacman -S --noconfirm firefox alacritty thunar
-pacman -S --noconfirm network-manager-applet
+# Install XFCE desktop environment with verification
+InstallPackageGroupWithVerification xfce4 xfce4-goodies chroot
+InstallPackageGroupWithVerification firefox alacritty thunar chroot
+InstallPackageWithVerification network-manager-applet "Network Manager Applet" chroot
 
 # Enable display manager
 systemctl enable lightdm
@@ -85,14 +85,14 @@ install_i3() {
     PrintStatus "Installing i3 window manager..."
     
     arch-chroot /mnt /bin/zsh << 'EOF'
-# Install X11 and display manager
-pacman -S --noconfirm xorg-server xorg-xinit
-pacman -S --noconfirm lightdm lightdm-gtk-greeter
+# Install X11 and display manager with verification
+InstallPackageGroupWithVerification xorg-server xorg-xinit chroot
+InstallPackageGroupWithVerification lightdm lightdm-gtk-greeter chroot
 
-# Install i3
-pacman -S --noconfirm i3-wm i3status i3lock dmenu
-pacman -S --noconfirm firefox alacritty thunar
-pacman -S --noconfirm network-manager-applet
+# Install i3 window manager with verification
+InstallPackageGroupWithVerification i3-wm i3status i3lock dmenu chroot
+InstallPackageGroupWithVerification firefox alacritty thunar chroot
+InstallPackageWithVerification network-manager-applet "Network Manager Applet" chroot
 
 # Enable display manager
 systemctl enable lightdm
@@ -107,9 +107,9 @@ install_gnome() {
     PrintStatus "Installing GNOME desktop environment..."
     
     arch-chroot /mnt /bin/zsh << 'EOF'
-# Install GNOME
-pacman -S --noconfirm gnome gnome-extra gdm
-pacman -S --noconfirm firefox
+# Install GNOME with verification
+InstallPackageGroupWithVerification gnome gnome-extra gdm chroot
+InstallPackageWithVerification firefox "Firefox Browser" chroot
 
 # Enable display manager
 systemctl enable gdm
@@ -124,9 +124,9 @@ install_kde() {
     PrintStatus "Installing KDE Plasma desktop environment..."
     
     arch-chroot /mnt /bin/zsh << 'EOF'
-# Install KDE
-pacman -S --noconfirm plasma kde-applications sddm
-pacman -S --noconfirm firefox
+# Install KDE Plasma with verification
+InstallPackageGroupWithVerification plasma kde-applications sddm chroot
+InstallPackageWithVerification firefox "Firefox Browser" chroot
 
 # Enable display manager
 systemctl enable sddm

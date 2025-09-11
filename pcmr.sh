@@ -297,6 +297,153 @@ ReadValidatedYesNo() {
     ReadValidatedInput "$prompt" "ValidateYesNo \"$description\"" "$max_attempts"
 }
 
+# Package installation verification functions
+VerifyPackageInstalled() {
+    local package="$1"
+    local chroot_prefix="${2:-}"
+    
+    if [[ -n "$chroot_prefix" ]]; then
+        arch-chroot /mnt pacman -Q "$package" >/dev/null 2>&1
+    else
+        pacman -Q "$package" >/dev/null 2>&1
+    fi
+}
+
+InstallPackageWithVerification() {
+    local package="$1"
+    local description="${2:-$package}"
+    local chroot_prefix="${3:-}"
+    local max_attempts="${4:-3}"
+    local attempts=0
+    
+    PrintStatus "Installing $description..."
+    
+    while [[ $attempts -lt $max_attempts ]]; do
+        if [[ -n "$chroot_prefix" ]]; then
+            if arch-chroot /mnt pacman -S --noconfirm "$package"; then
+                if VerifyPackageInstalled "$package" "chroot"; then
+                    PrintStatus "Successfully installed $description"
+                    return 0
+                else
+                    PrintWarning "Package $package was installed but verification failed"
+                fi
+            fi
+        else
+            if pacman -S --noconfirm "$package"; then
+                if VerifyPackageInstalled "$package"; then
+                    PrintStatus "Successfully installed $description"
+                    return 0
+                else
+                    PrintWarning "Package $package was installed but verification failed"
+                fi
+            fi
+        fi
+        
+        ((attempts++))
+        if [[ $attempts -lt $max_attempts ]]; then
+            PrintWarning "Installation attempt $attempts failed for $description. Retrying... ($((max_attempts - attempts)) attempts remaining)"
+            sleep 2
+        fi
+    done
+    
+    HandleRecoverableError "Failed to install $description after $max_attempts attempts"
+    return 1
+}
+
+InstallPackageGroupWithVerification() {
+    local packages=("$@")
+    local failed_packages=()
+    local chroot_prefix=""
+    
+    # Check if last argument is "chroot" to determine installation mode
+    if [[ "${packages[-1]}" == "chroot" ]]; then
+        chroot_prefix="chroot"
+        unset 'packages[-1]'  # Remove "chroot" from packages array
+    fi
+    
+    PrintStatus "Installing package group: ${packages[*]}"
+    
+    for package in "${packages[@]}"; do
+        if ! InstallPackageWithVerification "$package" "$package" "$chroot_prefix"; then
+            failed_packages+=("$package")
+        fi
+    done
+    
+    if [[ ${#failed_packages[@]} -gt 0 ]]; then
+        PrintWarning "The following packages failed to install: ${failed_packages[*]}"
+        return 1
+    else
+        PrintStatus "All packages in group installed successfully"
+        return 0
+    fi
+}
+
+# Safe pacman command wrapper with error checking
+SafePacman() {
+    local args=("$@")
+    local chroot_mode=false
+    local max_attempts=3
+    local attempts=0
+    
+    # Check if first argument is "chroot"
+    if [[ "${args[0]}" == "chroot" ]]; then
+        chroot_mode=true
+        args=("${args[@]:1}")  # Remove "chroot" from args
+    fi
+    
+    while [[ $attempts -lt $max_attempts ]]; do
+        if [[ "$chroot_mode" == true ]]; then
+            if arch-chroot /mnt pacman "${args[@]}"; then
+                return 0
+            fi
+        else
+            if pacman "${args[@]}"; then
+                return 0
+            fi
+        fi
+        
+        ((attempts++))
+        if [[ $attempts -lt $max_attempts ]]; then
+            PrintWarning "Pacman command failed. Retrying... ($((max_attempts - attempts)) attempts remaining)"
+            sleep 2
+        fi
+    done
+    
+    HandleRecoverableError "Pacman command failed after $max_attempts attempts: ${args[*]}"
+    return 1
+}
+
+# AUR helper installation with verification
+InstallAurPackageWithVerification() {
+    local package="$1"
+    local description="${2:-$package}"
+    local aur_helper="${3:-yay}"
+    local max_attempts="${4:-3}"
+    local attempts=0
+    
+    PrintStatus "Installing AUR package: $description..."
+    
+    while [[ $attempts -lt $max_attempts ]]; do
+        if arch-chroot /mnt sudo -u "$USERNAME" "$aur_helper" -S --noconfirm "$package"; then
+            if VerifyPackageInstalled "$package" "chroot"; then
+                PrintStatus "Successfully installed AUR package: $description"
+                return 0
+            else
+                PrintWarning "AUR package $package was installed but verification failed"
+            fi
+        fi
+        
+        ((attempts++))
+        if [[ $attempts -lt $max_attempts ]]; then
+            PrintWarning "AUR installation attempt $attempts failed for $description. Retrying... ($((max_attempts - attempts)) attempts remaining)"
+            sleep 5
+        fi
+    done
+    
+    HandleRecoverableError "Failed to install AUR package $description after $max_attempts attempts"
+    return 1
+}
+
 # Function to show help
 ShowHelp() {
     cat << EOF

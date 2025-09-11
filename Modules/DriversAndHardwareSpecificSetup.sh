@@ -8,36 +8,36 @@ drivers_and_hardware_setup() {
 # Install AMD Strix Halo specific drivers
 PrintStatus "Installing AMD Strix Halo drivers..."
 
-# AMD GPU drivers
-pacman -S --noconfirm mesa xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon
+# AMD GPU drivers with verification
+InstallPackageGroupWithVerification mesa xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon chroot
 
-# Install MediaTek Wi-Fi drivers (MT7925e)
+# Install MediaTek Wi-Fi drivers (MT7925e) with verification
 PrintStatus "Installing MediaTek Wi-Fi drivers..."
-pacman -S --noconfirm linux-firmware-mtk iw wpa_supplicant wireless_tools
+InstallPackageGroupWithVerification linux-firmware-mtk iw wpa_supplicant wireless_tools chroot
 
-# Install audio drivers
+# Install audio drivers with verification
 PrintStatus "Installing audio drivers..."
-pacman -S --noconfirm alsa-utils pulseaudio pulseaudio-alsa pavucontrol
+InstallPackageGroupWithVerification alsa-utils pulseaudio pulseaudio-alsa pavucontrol chroot
 
-# Install touchpad and input drivers
+# Install touchpad and input drivers with verification
 PrintStatus "Installing input drivers..."
-pacman -S --noconfirm xf86-input-libinput xf86-input-synaptics xorg-xinput
+InstallPackageGroupWithVerification xf86-input-libinput xf86-input-synaptics xorg-xinput chroot
 
-# Install USB and I/O drivers
+# Install USB and I/O drivers with verification
 PrintStatus "Installing USB and I/O drivers..."
-pacman -S --noconfirm usbutils usb_modeswitch thunderbolt
+InstallPackageGroupWithVerification usbutils usb_modeswitch thunderbolt chroot
 
-# Install camera drivers
+# Install camera drivers with verification
 PrintStatus "Installing camera drivers..."
-pacman -S --noconfirm v4l-utils cheese
+InstallPackageGroupWithVerification v4l-utils cheese chroot
 
-# Install Bluetooth drivers
+# Install Bluetooth drivers with verification
 PrintStatus "Installing Bluetooth drivers..."
-pacman -S --noconfirm bluez bluez-utils blueman
+InstallPackageGroupWithVerification bluez bluez-utils blueman chroot
 
-# Install additional hardware support
+# Install additional hardware support with verification
 PrintStatus "Installing additional hardware support..."
-pacman -S --noconfirm lm_sensors hdparm smartmontools acpi acpid
+InstallPackageGroupWithVerification lm_sensors hdparm smartmontools acpi acpid chroot
 
 # Display stability fixes and 180Hz support
 PrintStatus "Configuring display stability and 180Hz support..."

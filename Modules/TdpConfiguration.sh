@@ -8,10 +8,10 @@ tdp_configuration_setup() {
 # Install TDP and power management tools
 PrintStatus "Installing TDP configuration tools..."
 
-# Install core TDP tools
-pacman -S --noconfirm cpupower acpi-call-dkms msr-tools
-pacman -S --noconfirm powertop turbostat i7z
-pacman -S --noconfirm ryzenadj amdctl
+# Install core TDP tools with verification
+InstallPackageGroupWithVerification cpupower acpi-call-dkms msr-tools chroot
+InstallPackageGroupWithVerification powertop turbostat i7z chroot
+InstallPackageGroupWithVerification ryzenadj amdctl chroot
 
 # Create TDP management script with dynamic power management
 cat > $TDP_MANAGER_PATH << EOH

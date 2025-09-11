@@ -10,33 +10,34 @@ PrintStatus "Installing Steam and gaming packages..."
 
 # Enable multilib repository
 sed -i '/\[multilib\]/,/Include/s/^#//' /etc/pacman.conf
-pacman -Sy
+SafePacman chroot -Sy
 
-# Install Steam and gaming essentials
-pacman -S --noconfirm steam steam-native-runtime
-pacman -S --noconfirm gamemode mangohud goverlay
-pacman -S --noconfirm lutris wine-staging discord obs-studio
+# Install Steam and gaming essentials with verification
+InstallPackageGroupWithVerification steam steam-native-runtime chroot
+InstallPackageGroupWithVerification gamemode mangohud goverlay chroot
+InstallPackageGroupWithVerification lutris wine-staging discord obs-studio chroot
 
-# Install gaming libraries
-pacman -S --noconfirm lib32-mesa lib32-vulkan-radeon
-pacman -S --noconfirm lib32-vulkan-icd-loader lib32-vulkan-mesa-layers
+# Install gaming libraries with verification
+InstallPackageGroupWithVerification lib32-mesa lib32-vulkan-radeon chroot
+InstallPackageGroupWithVerification lib32-vulkan-icd-loader lib32-vulkan-mesa-layers chroot
 
-# Install additional gaming tools
-pacman -S --noconfirm protontricks protonup-qt
-pacman -S --noconfirm steam-tui steam-launcher
+# Install additional gaming tools with verification
+InstallPackageGroupWithVerification protontricks protonup-qt chroot
+InstallPackageGroupWithVerification steam-tui steam-launcher chroot
 
-# Install additional Valve/Steam/Proton libraries and tools
-pacman -S --noconfirm dxvk-bin vkd3d-proton
-pacman -S --noconfirm heroic-games-launcher-bin protondb-cli
-pacman -S --noconfirm steam-rom-manager steam-meta
-pacman -S --noconfirm steam-tinker-launch wine-ge-custom
-pacman -S --noconfirm proton-ge-custom-bin
+# Install additional Valve/Steam/Proton libraries and tools with verification
+PrintStatus "Installing advanced gaming libraries..."
+InstallPackageGroupWithVerification dxvk-bin vkd3d-proton chroot
+InstallPackageGroupWithVerification heroic-games-launcher-bin protondb-cli chroot
+InstallPackageGroupWithVerification steam-rom-manager steam-meta chroot
+InstallPackageGroupWithVerification steam-tinker-launch wine-ge-custom chroot
+InstallPackageWithVerification proton-ge-custom-bin "Proton GE Custom" chroot
 
-# Install controller support packages
+# Install controller support packages with verification
 PrintStatus "Installing controller support packages..."
-pacman -S --noconfirm xpadneo-dkms xpadneo-utils ds4drv xboxdrv
-pacman -S --noconfirm jstest-gtk antimicrox sc-controller
-pacman -S --noconfirm bluez bluez-utils blueman
+InstallPackageGroupWithVerification xpadneo-dkms xpadneo-utils ds4drv xboxdrv chroot
+InstallPackageGroupWithVerification jstest-gtk antimicrox sc-controller chroot
+InstallPackageGroupWithVerification bluez bluez-utils blueman chroot
 
 EOF
 

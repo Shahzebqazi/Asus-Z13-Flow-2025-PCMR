@@ -110,39 +110,41 @@ Want full control? Use standard mode and answer prompts:
 
 Your ASUS ROG Flow Z13 (2025) isn't just another laptop - it's a technological marvel that needs special care to reach its full potential on Linux:
 
-### **🔥 AMD Strix Halo Power**
-- **7W Tablet Mode**: 12+ hours battery life for reading and light tasks
-- **70W Balanced**: Perfect for work, development, and daily computing  
-- **120W+ Beast Mode**: Gaming and AI workloads that rival desktop GPUs
-- **Smart Switching**: Automatically adjusts based on power source and workload
+### **🔥 AMD Strix Halo Power Management**
+- **7W Tablet Mode**: 8-12 hours battery for basic tasks (varies by usage)
+- **45W Balanced**: Good for work and development (4-6 hours battery)
+- **85W Performance**: Higher performance with thermal limitations (2-3 hours battery)
+- **120W Maximum**: Short bursts only due to cooling constraints (45-90 minutes)
 
-### **🎮 Gaming Handheld Performance**
-- **Steam Deck Experience**: But with better performance and full laptop capability
-- **Controller Ready**: PS4, PS5, Xbox controllers work instantly
-- **ROG Ally Features**: All gaming optimizations from ASUS ecosystem
-- **Proton Gaming**: Play Windows games better than on Windows
+### **🎮 Gaming Capabilities**
+- **Handheld Gaming**: Decent performance for light-medium games (thermal constraints apply)
+- **Controller Support**: Standard Linux controller support for common gamepads
+- **Steam Integration**: Steam and Proton work but with thermal limitations
+- **Performance Reality**: Gaming performance varies significantly due to thermal design
 
-### **📊 **Real-World Performance**
+### **📊 **Real-World Performance Expectations**
 
 | Use Case | Power Mode | Battery Life | Performance |
 |----------|------------|--------------|-------------|
-| **Reading/Web** | 7W Efficient | 12+ hours | Perfect |
-| **Work/Code** | 70W Balanced | 6-8 hours | Excellent |
-| **Gaming** | 120W Performance | 3-4 hours | Desktop-class |
-| **AI/ML** | 120W+ Turbo | 2-3 hours | Workstation-class |
+| **Reading/Web** | 7W Efficient | 8-12 hours | Excellent |
+| **Work/Code** | 45W Balanced | 4-6 hours | Very Good |
+| **Light Gaming** | 85W Performance | 1.5-2.5 hours | Good |
+| **Intensive Gaming** | 120W Maximum | 45-90 minutes | Limited by thermals |
+
+*Note: Battery life varies significantly based on display brightness, background apps, and actual workload. Gaming performance is limited by thermal constraints in tablet form factor.*
 
 ### **🛠️ Z13 Flow-Specific Optimizations**
 
 This script includes hardware-specific optimizations that differentiate it from generic Strix Halo guides:
 
-**🔧 ASUS vs HP Hardware Differences**
-- **MediaTek MT7925e WiFi**: Z13-specific stability fixes (HP G1A uses Intel WiFi)
-- **ASUS ROG Controls**: `asusctl`, `supergfxctl`, `rog-control-center` (not HP-specific tools)
-- **180Hz Display with VRR**: Z13 2025 AI Max+ native refresh rate and variable refresh rate support
-- **Quad Speaker Array**: Audio tuning for Z13's speaker setup
-- **External Monitor Intelligence**: Smart lid-close behavior when external displays connected
-- **Tablet Mode Detection**: Z13's convertible form factor support
-- **Dual USB-C Thunderbolt**: Z13's port configuration
+**🔧 Z13 Flow Hardware Optimizations**
+- **MediaTek MT7922 WiFi**: Z13-specific stability fixes and power management (uses mt7921e driver)
+- **ASUS ROG Controls**: Limited `asusctl` support for basic functions (fan control, power profiles)
+- **180Hz Display**: Native refresh rate configuration (VRR support varies by kernel)
+- **Audio Array**: Basic speaker configuration for Z13's setup
+- **External Monitor Intelligence**: Smart lid-close behavior when external displays connected  
+- **Tablet Mode Detection**: Basic convertible form factor support (limited in some DEs)
+- **USB-C Power Delivery**: Optimized charging behavior
 
 **⚡ Advanced TDP Management System**
 - **System-Wide Dynamic TDP**: Automatic adjustment based on power source and battery level
@@ -173,11 +175,11 @@ Your Z13 comes with a beautiful, modern shell setup:
 
 **🚀 Ready-to-Use TDP & Power Aliases**
 ```bash
-# Dynamic TDP Management (Z13 2025 AI Max+ specific!)
-gaming       # AC: 120W, Battery: Dynamic (7-25W based on battery %)
-performance  # AC: 85W,  Battery: Dynamic (7-25W based on battery %)
-balanced     # AC: 45W,  Battery: Dynamic (7-25W based on battery %)
-efficient    # AC: 15W,  Battery: Dynamic (7-25W based on battery %)
+# Dynamic TDP Management (Z13 Flow specific!)
+gaming       # AC: 120W, Battery: Dynamic (thermal limits apply)
+performance  # AC: 85W,  Battery: Dynamic (sustainable performance)
+balanced     # AC: 45W,  Battery: Dynamic (recommended for most use)
+efficient    # AC: 15W,  Battery: Dynamic (maximum battery life)
 
 # TDP Utilities
 tdp-status   # Show current power source, battery %, and TDP

@@ -2,11 +2,11 @@
 # ASUS ROG Flow Z13 (2025) - Configurable TDP and Power Management
 
 tdp_configuration_setup() {
-    print_header "TDP Configuration Setup"
+    PrintHeader "TDP Configuration Setup"
     
     arch-chroot /mnt /bin/zsh << 'EOF'
 # Install TDP and power management tools
-print_status "Installing TDP configuration tools..."
+PrintStatus "Installing TDP configuration tools..."
 
 # Install core TDP tools
 pacman -S --noconfirm cpupower acpi-call-dkms msr-tools
@@ -115,5 +115,5 @@ chmod +x /usr/local/bin/tdp-manager
 
 EOF
 
-    print_status "TDP configuration setup completed"
+    PrintStatus "TDP configuration setup completed"
 }

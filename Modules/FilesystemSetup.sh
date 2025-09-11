@@ -3,12 +3,12 @@
 
 # Function to setup ZFS
 setup_zfs() {
-    print_header "Setting up ZFS Filesystem"
+    PrintHeader "Setting up ZFS Filesystem"
     
     # Check available memory
     local mem_gb=$(free -g | awk 'NR==2{print $2}')
     if [[ $mem_gb -lt 2 ]]; then
-        print_error "ZFS requires at least 2GB RAM. Available: ${mem_gb}GB"
+        PrintError "ZFS requires at least 2GB RAM. Available: ${mem_gb}GB"
         return 1
     fi
     
@@ -47,12 +47,12 @@ setup_zfs() {
     
     FILESYSTEM_CREATED="zfs"
     CURRENT_FILESYSTEM="zfs"
-    print_status "ZFS filesystem created successfully"
+    PrintStatus "ZFS filesystem created successfully"
 }
 
 # Function to setup Btrfs
 setup_btrfs() {
-    print_header "Setting up Btrfs Filesystem"
+    PrintHeader "Setting up Btrfs Filesystem"
     
     # Create swap
     mkswap "$SWAP_PART"
@@ -85,12 +85,12 @@ setup_btrfs() {
     
     FILESYSTEM_CREATED="btrfs"
     CURRENT_FILESYSTEM="btrfs"
-    print_status "Btrfs filesystem created successfully"
+    PrintStatus "Btrfs filesystem created successfully"
 }
 
 # Function to setup ext4
 setup_ext4() {
-    print_header "Setting up ext4 Filesystem"
+    PrintHeader "Setting up ext4 Filesystem"
     
     # Create swap
     mkswap "$SWAP_PART"
@@ -106,20 +106,20 @@ setup_ext4() {
     
     FILESYSTEM_CREATED="ext4"
     CURRENT_FILESYSTEM="ext4"
-    print_status "ext4 filesystem created successfully"
+    PrintStatus "ext4 filesystem created successfully"
 }
 
 # Main filesystem setup function
 filesystem_setup() {
-    print_header "Filesystem Setup"
+    PrintHeader "Filesystem Setup"
     
     # Try ZFS first
     if [[ "$FILESYSTEM" == "zfs" ]]; then
         if setup_zfs; then
-            print_status "ZFS setup completed"
+            PrintStatus "ZFS setup completed"
             return 0
         else
-            print_warning "ZFS setup failed, trying Btrfs..."
+            PrintWarning "ZFS setup failed, trying Btrfs..."
             FILESYSTEM="btrfs"
         fi
     fi
@@ -127,20 +127,20 @@ filesystem_setup() {
     # Try Btrfs
     if [[ "$FILESYSTEM" == "btrfs" ]]; then
         if setup_btrfs; then
-            print_status "Btrfs setup completed"
+            PrintStatus "Btrfs setup completed"
             return 0
         else
-            print_warning "Btrfs setup failed, trying ext4..."
+            PrintWarning "Btrfs setup failed, trying ext4..."
             FILESYSTEM="ext4"
         fi
     fi
     
     # Fallback to ext4
     if setup_ext4; then
-        print_status "ext4 setup completed (fallback)"
+        PrintStatus "ext4 setup completed (fallback)"
         return 0
     else
-        print_error "All filesystem setup attempts failed"
+        PrintError "All filesystem setup attempts failed"
         exit 1
     fi
 }

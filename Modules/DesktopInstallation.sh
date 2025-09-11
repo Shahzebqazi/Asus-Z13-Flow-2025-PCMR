@@ -2,7 +2,7 @@
 # Handles desktop environment installation
 
 desktop_installation() {
-    print_header "Desktop Installation: $DESKTOP_ENVIRONMENT"
+    PrintHeader "Desktop Installation: $DESKTOP_ENVIRONMENT"
     
     case "$DESKTOP_ENVIRONMENT" in
         "omarchy")
@@ -21,20 +21,20 @@ desktop_installation() {
             install_kde
             ;;
         "minimal")
-            print_status "Minimal installation - no desktop environment."
+            PrintStatus "Minimal installation - no desktop environment."
             ;;
         *)
-            print_error "Unknown desktop environment: $DESKTOP_ENVIRONMENT"
+            PrintError "Unknown desktop environment: $DESKTOP_ENVIRONMENT"
             exit 1
             ;;
     esac
     
-    print_status "Desktop environment installation completed"
+    PrintStatus "Desktop environment installation completed"
 }
 
 # Function to install Omarchy
 install_omarchy() {
-    print_status "Installing Omarchy tiling window manager..."
+    PrintStatus "Installing Omarchy tiling window manager..."
     
     arch-chroot /mnt /bin/zsh << 'EOF'
 # Install X11 and display manager
@@ -56,12 +56,12 @@ systemctl enable lightdm
 
 EOF
 
-    print_status "Omarchy installation completed"
+    PrintStatus "Omarchy installation completed"
 }
 
 # Function to install XFCE
 install_xfce() {
-    print_status "Installing XFCE desktop environment..."
+    PrintStatus "Installing XFCE desktop environment..."
     
     arch-chroot /mnt /bin/zsh << 'EOF'
 # Install X11 and display manager
@@ -78,12 +78,12 @@ systemctl enable lightdm
 
 EOF
 
-    print_status "XFCE installation completed"
+    PrintStatus "XFCE installation completed"
 }
 
 # Function to install i3
 install_i3() {
-    print_status "Installing i3 window manager..."
+    PrintStatus "Installing i3 window manager..."
     
     arch-chroot /mnt /bin/zsh << 'EOF'
 # Install X11 and display manager
@@ -100,12 +100,12 @@ systemctl enable lightdm
 
 EOF
 
-    print_status "i3 installation completed"
+    PrintStatus "i3 installation completed"
 }
 
 # Function to install GNOME
 install_gnome() {
-    print_status "Installing GNOME desktop environment..."
+    PrintStatus "Installing GNOME desktop environment..."
     
     arch-chroot /mnt /bin/zsh << 'EOF'
 # Install GNOME
@@ -117,12 +117,12 @@ systemctl enable gdm
 
 EOF
 
-    print_status "GNOME installation completed"
+    PrintStatus "GNOME installation completed"
 }
 
 # Function to install KDE
 install_kde() {
-    print_status "Installing KDE Plasma desktop environment..."
+    PrintStatus "Installing KDE Plasma desktop environment..."
     
     arch-chroot /mnt /bin/zsh << 'EOF'
 # Install KDE
@@ -134,5 +134,5 @@ systemctl enable sddm
 
 EOF
 
-    print_status "KDE installation completed"
+    PrintStatus "KDE installation completed"
 }

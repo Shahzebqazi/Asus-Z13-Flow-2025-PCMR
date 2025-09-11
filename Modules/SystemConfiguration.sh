@@ -2,7 +2,7 @@
 # Handles system-wide configuration
 
 system_configuration() {
-    print_header "Configuring System"
+    PrintHeader "Configuring System"
     
     # Set default username if not provided
     USERNAME=${USERNAME:-"archuser"}
@@ -44,5 +44,5 @@ echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
 EOF
 
-    print_status "System configuration completed"
+    PrintStatus "System configuration completed"
 }

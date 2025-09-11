@@ -2,11 +2,11 @@
 # ASUS ROG Flow Z13 (2025) - Steam, Gaming, and Controller Support
 
 steam_gaming_setup() {
-    print_header "Steam and Gaming Setup"
+    PrintHeader "Steam and Gaming Setup"
     
     arch-chroot /mnt /bin/zsh << 'EOF'
 # Install Steam and gaming packages
-print_status "Installing Steam and gaming packages..."
+PrintStatus "Installing Steam and gaming packages..."
 
 # Enable multilib repository
 sed -i '/\[multilib\]/,/Include/s/^#//' /etc/pacman.conf
@@ -33,12 +33,12 @@ pacman -S --noconfirm steam-tinker-launch wine-ge-custom
 pacman -S --noconfirm proton-ge-custom-bin
 
 # Install controller support packages
-print_status "Installing controller support packages..."
+PrintStatus "Installing controller support packages..."
 pacman -S --noconfirm xpadneo-dkms xpadneo-utils ds4drv xboxdrv
 pacman -S --noconfirm jstest-gtk antimicrox sc-controller
 pacman -S --noconfirm bluez bluez-utils blueman
 
 EOF
 
-    print_status "Steam and gaming setup completed"
+    PrintStatus "Steam and gaming setup completed"
 }

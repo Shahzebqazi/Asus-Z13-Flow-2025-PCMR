@@ -5,6 +5,14 @@
 bootloader_setup() {
     PrintHeader "Bootloader Setup"
 
+    # Safety: auto-switch to GRUB if Windows is detected
+    if [[ "$DUAL_BOOT_MODE" != "gpt" ]]; then
+        if lsblk -rno FSTYPE | grep -qi ntfs || [[ -d /mnt/boot/EFI/Microsoft ]]; then
+            PrintWarning "Windows detected; switching to GRUB for dual-boot"
+            DUAL_BOOT_MODE="gpt"
+        fi
+    fi
+
     if [[ "$DUAL_BOOT_MODE" == "gpt" ]]; then
         PrintStatus "Installing GRUB for dual-boot"
         pacstrap /mnt grub efibootmgr os-prober || HandleFatalError "Failed to install GRUB"

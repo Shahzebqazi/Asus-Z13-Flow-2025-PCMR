@@ -10,7 +10,9 @@ Run as Administrator.
 param(
     [Parameter(Mandatory=$false)] [int]$MinEspMiB = 260,
     [Parameter(Mandatory=$false)] [int]$NewEspMiB = 300,
-    [Parameter(Mandatory=$false)] [int]$ShrinkOsMiB = 512
+    [Parameter(Mandatory=$false)] [int]$ShrinkOsMiB = 512,
+    [Parameter(Mandatory=$false)] [switch]$AllowBitLocker,
+    [Parameter(Mandatory=$false)] [switch]$SkipPendingRebootCheck
 )
 
 Set-StrictMode -Version Latest
@@ -38,6 +40,30 @@ function Get-Esp([Microsoft.Management.Infrastructure.CimInstance]$Disk) {
     Get-Partition -DiskNumber $Disk.Number | Where-Object { $_.GptType -eq $guid }
 }
 
+function Test-PendingReboot {
+    try {
+        $reboot = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired' -ErrorAction SilentlyContinue)
+        return [bool]$reboot
+    } catch { return $false }
+}
+
+function Assert-NoPendingReboot {
+    if (-not $SkipPendingRebootCheck) {
+        if (Test-PendingReboot) { throw 'A reboot is pending. Please reboot Windows and re-run this script.' }
+    }
+}
+
+function Assert-BitLockerSuspended {
+    try {
+        $osVol = Get-BitLockerVolume -MountPoint 'C:' -ErrorAction SilentlyContinue
+        if ($osVol -and $osVol.ProtectionStatus -eq 'On' -and -not $AllowBitLocker) {
+            throw 'BitLocker is enabled on C:. Suspend BitLocker (manage-bde -protectors -disable C: -RebootCount 1) and retry, or pass -AllowBitLocker to proceed at your own risk.'
+        }
+    } catch {
+        Write-Warn 'BitLocker status could not be determined; proceeding. Consider suspending BitLocker before ESP changes.'
+    }
+}
+
 function Ensure-LargeEsp([Microsoft.Management.Infrastructure.CimInstance]$Disk,[int]$MinMiB,[int]$NewMiB,[int]$ShrinkMiB){
     $esp = Get-Esp -Disk $Disk
     if($esp){
@@ -46,20 +72,54 @@ function Ensure-LargeEsp([Microsoft.Management.Infrastructure.CimInstance]$Disk,
         Write-Warn "ESP $mi MiB < $MinMiB MiB; creating new ESP."
     } else { Write-Warn 'No ESP found; creating new ESP.' }
 
-    $cPart   = Get-Partition -DriveLetter C
-    $newSize = $cPart.Size - ($ShrinkMiB * 1MB)
-    if($newSize -lt 20GB){ throw 'C: too small to shrink safely.' }
-    Write-Info "Shrinking C: by $ShrinkMiB MiB..."; Resize-Partition -DriveLetter C -Size $newSize
+    $cPart = Get-Partition -DriveLetter C
+    $supported = $null
+    try {
+        $supported = Get-PartitionSupportedSize -DriveLetter C
+    } catch {
+        throw 'Failed to query supported shrink size for C:. Ensure you are running as Administrator.'
+    }
+
+    $desiredSize = $cPart.Size - ($ShrinkMiB * 1MB)
+    if ($desiredSize -lt 20GB) { throw 'C: would become too small. Reduce -ShrinkOsMiB or free space on C:.' }
+    if ($desiredSize -lt $supported.SizeMin) {
+        throw "Insufficient shrink headroom. Minimum supported size is $([math]::Round($supported.SizeMin/1MB)) MiB. Free space, disable hibernation/Fast Startup, reduce restore points, then retry."
+    }
+
+    try {
+        Write-Info "Shrinking C: by $ShrinkMiB MiB..."
+        Resize-Partition -DriveLetter C -Size $desiredSize
+    } catch {
+        throw "Failed to shrink C:: $($_.Exception.Message). Try: powercfg /h off; disable Fast Startup; run Disk Cleanup; reboot and retry."
+    }
 
     $guid='{C12A7328-F81F-11D2-BA4B-00A0C93EC93B}'
     Write-Info "Creating new $NewMiB MiB ESP..."
-    $newEsp = New-Partition -DiskNumber $Disk.Number -Size ($NewMiB*1MB) -GptType $guid -AssignDriveLetter
+    try {
+        $newEsp = New-Partition -DiskNumber $Disk.Number -Size ($NewMiB*1MB) -GptType $guid -AssignDriveLetter
+    } catch {
+        throw "Failed to create new ESP: $($_.Exception.Message). Ensure there is unallocated space at disk end."
+    }
     $letter = ($newEsp | Get-Volume).DriveLetter
-    if(-not $letter){ $letter='S'; Set-Partition -DiskNumber $Disk.Number -PartitionNumber $newEsp.PartitionNumber -NewDriveLetter $letter }
-    Format-Volume -DriveLetter $letter -FileSystem FAT32 -NewFileSystemLabel 'EFI' -Force | Out-Null
+    if(-not $letter){
+        try {
+            $letter='S'; Set-Partition -DiskNumber $Disk.Number -PartitionNumber $newEsp.PartitionNumber -NewDriveLetter $letter
+        } catch {
+            throw 'Failed to assign a drive letter to the new ESP.'
+        }
+    }
+    try {
+        Format-Volume -DriveLetter $letter -FileSystem FAT32 -NewFileSystemLabel 'EFI' -Force | Out-Null
+    } catch {
+        throw "Failed to format the new ESP: $($_.Exception.Message)"
+    }
 
     Write-Info 'Deploying Windows boot files to new ESP...'
-    bcdboot C:\Windows /s "$letter:" /f UEFI | Out-Null
+    try {
+        bcdboot C:\Windows /s "$letter:" /f UEFI | Out-Null
+    } catch {
+        throw "bcdboot failed to deploy boot files: $($_.Exception.Message)"
+    }
 
     Write-Info 'New ESP ready; old ESP kept as fallback.'
     return (Get-Partition -DiskNumber $Disk.Number | Where-Object { $_.PartitionNumber -eq $newEsp.PartitionNumber })
@@ -67,6 +127,8 @@ function Ensure-LargeEsp([Microsoft.Management.Infrastructure.CimInstance]$Disk,
 
 try{
     Assert-Admin
+    Assert-NoPendingReboot
+    Assert-BitLockerSuspended
     $disk = Get-OsDisk
     $esp  = Ensure-LargeEsp $disk $MinEspMiB $NewEspMiB $ShrinkOsMiB
     $mi=[math]::Round($esp.Size/1MB)

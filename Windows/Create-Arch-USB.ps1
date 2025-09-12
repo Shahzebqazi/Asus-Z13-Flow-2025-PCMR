@@ -34,7 +34,14 @@ param(
 
     [Parameter(Mandatory=$false)] [int]$MinEspMiB = 260,               # Minimum acceptable ESP size
     [Parameter(Mandatory=$false)] [int]$NewEspMiB = 300,               # New ESP size to create
-    [Parameter(Mandatory=$false)] [int]$ShrinkOsMiB = 512              # Amount to shrink OS volume if needed
+    [Parameter(Mandatory=$false)] [int]$ShrinkOsMiB = 512,             # Amount to shrink OS volume if needed
+
+    [Parameter(Mandatory=$false)] [switch]$DisableFastStartup,
+    [Parameter(Mandatory=$false)] [switch]$DisableHibernation,
+    [Parameter(Mandatory=$false)] [switch]$ApplyPowerFixes,            # Implies both disables
+
+    [Parameter(Mandatory=$false)] [switch]$AllowBitLocker,             # Pass through to Ensure-ESP
+    [Parameter(Mandatory=$false)] [switch]$SkipPendingRebootCheck      # Pass through to Ensure-ESP
 )
 
 Set-StrictMode -Version Latest
@@ -98,7 +105,6 @@ function Suspend-BitLockerIfNeeded {
 
 function Get-OsDisk {
     $cPart = Get-Partition -DriveLetter C
-    $cVol  = Get-Volume -DriveLetter C
     $disk  = Get-Disk | Where-Object { $_.Number -eq $cPart.DiskNumber }
     if (-not $disk) { throw 'Unable to determine OS disk.' }
     if ($disk.PartitionStyle -ne 'GPT') { throw 'Disk must be GPT for UEFI/ESP operations.' }
@@ -152,7 +158,7 @@ function Ensure-LargeEsp {
     }
     if (-not $letter) { throw 'Failed to assign drive letter to new ESP.' }
 
-    $newEspPath = "$letter:"
+    $newEspPath = "${letter}:"
     Write-Info "Formatting new ESP at $newEspPath as FAT32..."
     Format-Volume -DriveLetter $letter -FileSystem FAT32 -NewFileSystemLabel 'EFI' -Force | Out-Null
 
@@ -171,7 +177,7 @@ function Ensure-LargeEsp {
             }
             if ($oldLetter) {
                 Write-Info 'Copying non-Microsoft boot entries from old ESP (if any)...'
-                robocopy "$oldLetter:\EFI" "$newEspPath\EFI" /E /NFL /NDL /NJH /NJS /COPY:DAT /R:1 /W:1 | Out-Null
+                robocopy "${oldLetter}:\EFI" "${newEspPath}\EFI" /E /NFL /NDL /NJH /NJS /COPY:DAT /R:1 /W:1 | Out-Null
             }
         } catch { Write-Warn 'Skipping ESP content copy.' }
     }
@@ -186,14 +192,40 @@ function Launch-Rufus {
     if (-not (Test-Path $Iso))  { Write-Warn 'ISO path invalid; skipping USB creation.'; return }
     Write-Info 'Launching Rufus to create Arch USB (manual confirmation likely required)...'
     # Many Rufus versions lack a stable CLI; pass ISO to preselect it and open GUI
-    $args = @()
-    if ($Iso)    { $args += @($Iso) }
-    Start-Process -FilePath $Path -ArgumentList $args -Verb RunAs
+    $rufusArgs = @()
+    if ($Iso)    { $rufusArgs += @($Iso) }
+    Start-Process -FilePath $Path -ArgumentList $rufusArgs -Verb RunAs
+}
+
+function Disable-FastStartupSafely {
+    try {
+        Write-Info 'Disabling Fast Startup (registry)...'
+        $reg = 'HKLM:SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System'
+        New-Item -Path $reg -Force | Out-Null
+        New-ItemProperty -Path $reg -Name 'HiberbootEnabled' -Value 0 -PropertyType DWord -Force | Out-Null
+        Write-Info 'Fast Startup disabled.'
+    } catch {
+        Write-Warn "Failed to disable Fast Startup: $($_.Exception.Message)"
+    }
+}
+
+function Disable-HibernationSafely {
+    try {
+        Write-Info 'Disabling Hibernation (powercfg /h off)...'
+        powercfg /h off | Out-Null
+        Write-Info 'Hibernation disabled.'
+    } catch {
+        Write-Warn "Failed to disable Hibernation: $($_.Exception.Message)"
+    }
 }
 
 try {
     Assert-Admin
     
+    # Optional power fixes before disk work
+    if ($ApplyPowerFixes -or $DisableHibernation) { Disable-HibernationSafely }
+    if ($ApplyPowerFixes -or $DisableFastStartup) { Disable-FastStartupSafely }
+
     # Preinstall checks (non-destructive)
     $precheck = Join-Path $PSScriptRoot 'Preinstall-Check.ps1'
     if (-not (Test-Path $precheck)) { throw "Missing script: $precheck" }
@@ -216,7 +248,10 @@ try {
     # Ensure ESP using dedicated script
     $ensureEsp = Join-Path $PSScriptRoot 'Ensure-ESP.ps1'
     if (-not (Test-Path $ensureEsp)) { throw "Missing script: $ensureEsp" }
-    & $ensureEsp -MinEspMiB $MinEspMiB -NewEspMiB $NewEspMiB -ShrinkOsMiB $ShrinkOsMiB
+    & $ensureEsp -MinEspMiB $MinEspMiB -NewEspMiB $NewEspMiB -ShrinkOsMiB $ShrinkOsMiB @(
+        if ($AllowBitLocker) { '-AllowBitLocker' }
+        if ($SkipPendingRebootCheck) { '-SkipPendingRebootCheck' }
+    )
 
     if ($CreateUSB) {
         # Launch Rufus via dedicated script

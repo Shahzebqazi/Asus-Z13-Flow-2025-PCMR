@@ -545,7 +545,7 @@ CollectPasswords() {
     # Collect root password
     while [[ -z "$ROOT_PASSWORD" ]]; do
         echo -n "Enter root password: "
-        read -s ROOT_PASSWORD
+        read -s ROOT_PASSWORD < "$TTY_INPUT"
         echo
         
         if [[ ${#ROOT_PASSWORD} -lt 8 ]]; then
@@ -555,7 +555,7 @@ CollectPasswords() {
         fi
         
         echo -n "Confirm root password: "
-        read -s root_confirm
+        read -s root_confirm < "$TTY_INPUT"
         echo
         
         if [[ "$ROOT_PASSWORD" != "$root_confirm" ]]; then
@@ -567,7 +567,7 @@ CollectPasswords() {
     # Collect user password
     while [[ -z "$USER_PASSWORD" ]]; do
         echo -n "Enter password for user '$USERNAME': "
-        read -s USER_PASSWORD
+        read -s USER_PASSWORD < "$TTY_INPUT"
         echo
         
         if [[ ${#USER_PASSWORD} -lt 8 ]]; then
@@ -577,7 +577,7 @@ CollectPasswords() {
         fi
         
         echo -n "Confirm password for user '$USERNAME': "
-        read -s user_confirm
+        read -s user_confirm < "$TTY_INPUT"
         echo
         
         if [[ "$USER_PASSWORD" != "$user_confirm" ]]; then

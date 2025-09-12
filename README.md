@@ -21,14 +21,6 @@ The ASUS ROG Flow Z13 (2025) with AMD Strix Halo is an incredible machine, but g
 - 🖥️ **Dual Boot**: Keep Windows - perfect dual boot setup
 - 📸 **Snapshots**: Automatic system snapshots for easy recovery
 
-### **Built on Community Knowledge**
-This script combines wisdom from:
-- **Level1Techs Community**: Wendell's AMD Strix Halo guide (adapted for Z13 hardware)
-- **Arch Linux Community**: Best practices and hardware support  
-- **Z13 Flow Owners**: Real-world fixes and optimizations specific to ASUS hardware
-- **Gaming Community**: Steam Deck/ROG Ally optimization techniques
-- **ASUS ROG Community**: Z13-specific drivers and power management
-
 ## 🚀 **Quick Start**
 
 **Get the installer (stable):**
@@ -114,7 +106,7 @@ See `Docs/User Guide.md`.
 
 ## ⚡ **What Makes Your Z13 Special**
 
-Your ASUS ROG Flow Z13 (2025) isn't just another laptop - it's a technological marvel that needs special care to reach its full potential on Linux:
+Your ASUS ROG Flow Z13 (2025) isn't just another laptop - it's a technological marvel that has its full potential on Linux:
 
 ### **🔥 AMD Strix Halo Power Management**
 - **7W Tablet Mode**: 8-12 hours battery for basic tasks (varies by usage)

@@ -126,7 +126,9 @@ prepare_partitions() {
             [[ -b "$ROOT_PART" ]] && break || echo "Invalid partition"
         done
         read -p "Enter swap partition (optional, blank to skip): " SWAP_PART < "$TTY_INPUT" || true
-        [[ -n "$SWAP_PART" && ! -b "$SWAP_PART" ]] && HandleValidationError "Invalid swap partition"
+        if [[ -n "$SWAP_PART" && ! -b "$SWAP_PART" ]]; then
+            HandleValidationError "Invalid swap partition"
+        fi
     fi
 }
 

@@ -324,10 +324,10 @@ ReadValidatedInput() {
     
     while [[ $attempts -lt $max_attempts ]]; do
         if [[ -n "$default_value" ]]; then
-            read -p "$prompt (default: $default_value): " input < "$TTY_INPUT"
+            read -p "$prompt (default: $default_value): " input < "$TTY_INPUT" || true
             input="${input:-$default_value}"
         else
-            read -p "$prompt: " input < "$TTY_INPUT"
+            read -p "$prompt: " input < "$TTY_INPUT" || true
         fi
         
         if [[ -n "$validation_func" ]] && declare -F "$validation_func" >/dev/null 2>&1; then
@@ -357,7 +357,7 @@ ReadValidatedChoice() {
     local attempts=0
     local input=""
     while [[ $attempts -lt $max_attempts ]]; do
-        read -p "$prompt: " input < "$TTY_INPUT"
+        read -p "$prompt: " input < "$TTY_INPUT" || true
         if ValidateChoice "$input" "$max_choice" "$description"; then
             echo "$input"
             return 0
@@ -377,7 +377,7 @@ ReadValidatedYesNo() {
     local attempts=0
     local input=""
     while [[ $attempts -lt $max_attempts ]]; do
-        read -p "$prompt (y/n): " input < "$TTY_INPUT"
+        read -p "$prompt (y/n): " input < "$TTY_INPUT" || true
         if ValidateYesNo "$input" "$description"; then
             echo "$input"
             return 0
@@ -545,7 +545,7 @@ CollectPasswords() {
     # Collect root password
     while [[ -z "$ROOT_PASSWORD" ]]; do
         echo -n "Enter root password: "
-        read -s ROOT_PASSWORD < "$TTY_INPUT"
+        read -s ROOT_PASSWORD < "$TTY_INPUT" || true
         echo
         
         if [[ ${#ROOT_PASSWORD} -lt 8 ]]; then
@@ -555,7 +555,7 @@ CollectPasswords() {
         fi
         
         echo -n "Confirm root password: "
-        read -s root_confirm < "$TTY_INPUT"
+        read -s root_confirm < "$TTY_INPUT" || true
         echo
         
         if [[ "$ROOT_PASSWORD" != "$root_confirm" ]]; then
@@ -567,7 +567,7 @@ CollectPasswords() {
     # Collect user password
     while [[ -z "$USER_PASSWORD" ]]; do
         echo -n "Enter password for user '$USERNAME': "
-        read -s USER_PASSWORD < "$TTY_INPUT"
+        read -s USER_PASSWORD < "$TTY_INPUT" || true
         echo
         
         if [[ ${#USER_PASSWORD} -lt 8 ]]; then
@@ -577,7 +577,7 @@ CollectPasswords() {
         fi
         
         echo -n "Confirm password for user '$USERNAME': "
-        read -s user_confirm < "$TTY_INPUT"
+        read -s user_confirm < "$TTY_INPUT" || true
         echo
         
         if [[ "$USER_PASSWORD" != "$user_confirm" ]]; then
@@ -839,7 +839,7 @@ ShowSummary() {
     fi
     
     echo "Press Enter to continue or Ctrl+C to cancel..."
-    read -r < "$TTY_INPUT"
+    read -r < "$TTY_INPUT" || true
 }
 
 # Function to validate prerequisites
@@ -891,7 +891,7 @@ OfferRecoveryOptions() {
         echo "3) Clean up and exit (manual recovery)"
         echo ""
         
-        read -p "Choose recovery option (1-3): " recovery_choice < "$TTY_INPUT"
+        read -p "Choose recovery option (1-3): " recovery_choice < "$TTY_INPUT" || true
         
         case "$recovery_choice" in
             1)
@@ -1008,14 +1008,14 @@ RestartInstallation() {
     
     # Offer to change configuration
     echo ""
-    read -p "Would you like to use a different configuration? (y/n): " change_config < "$TTY_INPUT"
+    read -p "Would you like to use a different configuration? (y/n): " change_config < "$TTY_INPUT" || true
     
     if [[ "$change_config" =~ ^[Yy] ]]; then
         echo "Available configurations:"
         echo "1) Zen.json (stable default)"
         echo "2) Keep current configuration"
         
-        read -p "Choose configuration (1-2): " config_choice < "$TTY_INPUT"
+        read -p "Choose configuration (1-2): " config_choice < "$TTY_INPUT" || true
         
         case "$config_choice" in
             1) LoadConfig "$SCRIPT_DIR/Configs/Zen.json" ;;
@@ -1103,7 +1103,7 @@ OfferDetachOption() {
         PrintStatus "Current phase: $phase"
         PrintStatus "You can detach from this installation to do other tasks."
         echo ""
-        read -p "Would you like to detach now? (y/n): " detach_choice < "$TTY_INPUT"
+        read -p "Would you like to detach now? (y/n): " detach_choice < "$TTY_INPUT" || true
         
         if [[ "$detach_choice" =~ ^[Yy] ]]; then
             EnableDetachedMode

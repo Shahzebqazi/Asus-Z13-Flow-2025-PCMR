@@ -18,7 +18,7 @@
     "default_desktop": "omarchy",
     "enable_gaming": false,
     "enable_snapshots": true,
-    "enable_secure_boot": true,
+    "enable_secure_boot": false,
     "enable_suspend_resume": true,
     "enable_hibernate": true
   },

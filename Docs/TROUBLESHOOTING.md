@@ -1,12 +1,17 @@
-# Z13 Troubleshooting Guide
+# Z13 Troubleshooting (Consolidated)
 
-**ASUS ROG Flow Z13 (2025) - AMD Strix Halo AI Max+**
+This content now lives in the unified `Docs/User Guide.md` under “Troubleshooting (short)” and “Extended Troubleshooting”.
 
-This comprehensive troubleshooting guide covers common issues and their solutions for your Z13 installation.
+Start here:
 
-## 🚨 Emergency Quick Reference
+- `Docs/User Guide.md` → Troubleshooting (short)
+- `Docs/User Guide.md` → Extended Troubleshooting
 
-### Critical Issues - Immediate Actions
+If something is missing, open an issue to add it to the user guide.
+
+## (Deprecated sections below)
+
+### Emergency Quick Reference
 ```bash
 # System won't boot
 z13-recovery emergency
@@ -74,7 +79,7 @@ free -h  # Memory
 **Diagnosis:**
 ```bash
 # Validate JSON syntax
-python3 -m json.tool Configs/Zen.conf
+python3 -m json.tool Configs/Zen.json
 ```
 
 **Solutions:**

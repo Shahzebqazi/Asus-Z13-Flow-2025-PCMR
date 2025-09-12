@@ -12,7 +12,7 @@ Key settings:
 - Dual boot: gpt (detects Windows EFI and preserves it)
 - Gaming: disabled
 - Snapshots: enabled
-- Secure Boot: enabled (systemd-boot + sbctl)
+- Secure Boot: disabled (uses GRUB to preserve Windows boot)
 
 Notes:
 - Ensure Windows is fully shut down (no Fast Startup) before shrinking partitions.

@@ -33,11 +33,13 @@ This script combines wisdom from:
 
 ### **Automated Installation (Recommended)**
 ```bash
-# Boot from Arch Linux USB and run:
-curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh | bash
+# Boot from Arch Linux USB and run (stable branch):
+curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
 ```
 
 ### **Using Configuration Files**
+Note: local configs require cloning the stable branch:
+`git clone -b stable https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR.git`
 ```bash
 # Download and run with Level1Techs config
 ./pcmr.sh --config Configs/Level1Techs.json
@@ -74,7 +76,7 @@ Perfect for most users - uses optimal settings for Z13:
 ```
 
 ### Secure Boot (optional)
-This installer supports Secure Boot using systemd-boot + sbctl when enabled in your config:
+This installer supports Secure Boot using systemd-boot + sbctl when enabled in your config. For compatibility, Secure Boot is only applied for fresh or Linux-only installs; dual-boot with existing Windows will automatically use GRUB without Secure Boot:
 ```json
 {
   "installation": {
@@ -84,7 +86,7 @@ This installer supports Secure Boot using systemd-boot + sbctl when enabled in y
 ```
 Notes:
 - Keys are created and enrolled via sbctl; kernel and bootloader are signed.
-- GRUB remains available when Secure Boot is disabled.
+- Dual-boot (existing Windows): GRUB is used; keep Secure Boot disabled to avoid breaking Windows boot.
 
 ### **🎛️ Manual Configuration**
 Want full control? Use standard mode and answer prompts:
@@ -98,9 +100,15 @@ Want full control? Use standard mode and answer prompts:
 |-----------|------------------|
 | **Fresh install, best performance** | `Configs/FreshZen.json` |
 | **Fresh install, stable standard kernel** | `Configs/FreshStandard.json` |
-| **Keep Windows (dual-boot), best performance** | `Configs/DualBootZen.json` |
-| **Keep Windows (dual-boot), standard kernel** | `Configs/DualBootStandard.json` |
+| **Keep Windows (dual-boot), best performance** | `Configs/DualBootZen.json` (Secure Boot off) |
+| **Keep Windows (dual-boot), standard kernel** | `Configs/DualBootStandard.json` (Secure Boot off) |
 | **Full control (interactive)** | `./pcmr.sh --standard` |
+
+### Learn more about each profile
+- Fresh Zen: see `Docs/Configs/FreshZen.md`
+- Fresh Standard: see `Docs/Configs/FreshStandard.md`
+- Dual-Boot Zen: see `Docs/Configs/DualBootZen.md`
+- Dual-Boot Standard: see `Docs/Configs/DualBootStandard.md`
 
 ## 🚨 **Critical Safety Features**
 
@@ -227,7 +235,7 @@ echo $TERM
 # Check module status
 grep "MODULE_STATUS" /tmp/installation.log
 # Verify dependencies
-./Modules/core_installation.sh --check-deps
+./Modules/CoreInstallation.sh --check-deps
 ```
 
 **WiFi instability on Z13:**
@@ -342,4 +350,24 @@ z13-tdp list
 
 **Ready to install?** Boot from Arch USB and run: `./pcmr.sh --zen-kernel`
 
-**Want to contribute?** This project uses modern software engineering principles to create a maintainable, scalable installation system. See `Docs/Documentation.md` and `Docs/Modules/` for architecture, module specs, and user stories.
+**Want to contribute?** This project uses modern software engineering principles to create a maintainable, scalable installation system. See `Docs/User Guide.md` for user docs and `Docs/Prompt.md` for agent/developer context. Module specs live in `Docs/Modules/`.
+
+## 🪟 Windows Preparation Utility
+
+For dual-boot or when Windows is already installed, use the PowerShell helper to prepare safely:
+
+```powershell
+# Run as Administrator in Windows
+cd C:\path\to\repo\Windows
+PowerShell -ExecutionPolicy Bypass -File .\Create-Arch-USB.ps1 -BackupTargetDriveLetter E: -MinEspMiB 260 -NewEspMiB 300
+
+# Optional: launch Rufus with the Arch ISO preselected
+PowerShell -ExecutionPolicy Bypass -File .\Create-Arch-USB.ps1 -CreateUSB -RufusPath C:\Tools\rufus.exe -ISOPath C:\Users\you\Downloads\archlinux.iso
+```
+
+What it does:
+- Creates a system restore point and optional system image backup (USB/network)
+- Ensures a sufficiently sized EFI partition by creating a new ESP at the end of disk and deploying Windows boot files via `bcdboot` (does not move the original ESP)
+- Optionally launches Rufus to create the Arch USB installer
+
+See also: `Docs/User Guide.md` → Windows Preparation and the Arch Wiki on Windows ESP sizing.

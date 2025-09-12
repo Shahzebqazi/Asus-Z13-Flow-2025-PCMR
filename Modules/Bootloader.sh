@@ -9,6 +9,12 @@ bootloader_setup() {
 		HandleFatalError "/mnt/boot is not mounted. EFI partition must be mounted at /mnt/boot before bootloader installation."
 	fi
 
+	# If dual-boot GPT mode is selected, force Secure Boot off for compatibility
+	if [[ "$DUAL_BOOT_MODE" == "gpt" && "$ENABLE_SECURE_BOOT" == "true" ]]; then
+		PrintWarning "Dual-boot (GPT) mode detected; forcing Secure Boot off and using GRUB for compatibility."
+		ENABLE_SECURE_BOOT=false
+	fi
+
 	if [[ "$ENABLE_SECURE_BOOT" == "true" ]]; then
 		PrintStatus "Secure Boot enabled: Installing systemd-boot and configuring sbctl"
 

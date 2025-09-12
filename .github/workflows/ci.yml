@@ -2,9 +2,9 @@ name: Z13 Installation Script CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, stable, development ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, stable, development ]
   schedule:
     # Run tests daily at 2 AM UTC
     - cron: '0 2 * * *'
@@ -12,6 +12,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main'
     strategy:
       matrix:
         test-type: [unit, integration, performance, security]
@@ -23,7 +24,7 @@ jobs:
     - name: Set up test environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y bc shellcheck python3-json
+        sudo apt-get install -y bc shellcheck python3
         
     - name: Make test scripts executable
       run: |
@@ -59,6 +60,7 @@ jobs:
 
   security-scan:
     runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main'
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -73,7 +75,7 @@ jobs:
     - name: Run shell script security scan
       run: |
         # Check for common security issues in shell scripts
-        find . -name "*.sh" -type f -exec grep -l "eval\|exec\|\$(" {} \; > security_issues.txt || true
+        find . -name "*.sh" -type f -print0 | xargs -0 grep -E -l 'eval|exec|\$\(|`' > security_issues.txt || true
         if [ -s security_issues.txt ]; then
           echo "Potential security issues found in:"
           cat security_issues.txt
@@ -92,6 +94,7 @@ jobs:
 
   code-quality:
     runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main'
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -99,7 +102,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y shellcheck shfmt
+        sudo apt-get install -y shellcheck shfmt pwsh
         
     - name: Check shell script formatting
       run: |
@@ -110,19 +113,24 @@ jobs:
       run: |
         # Run ShellCheck with comprehensive checks
         find . -name "*.sh" -type f | xargs shellcheck -x -e SC1091
+
+    - name: Lint PowerShell scripts (PSScriptAnalyzer)
+      run: |
+        pwsh -NoProfile -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force; Invoke-ScriptAnalyzer -Path . -Recurse -EnableExit"
         
     - name: Check for TODO/FIXME comments
       run: |
         # Find TODO and FIXME comments for tracking
-        grep -r "TODO\|FIXME\|XXX\|HACK" --include="*.sh" --include="*.md" . || true
+        grep -Er "TODO|FIXME|XXX|HACK" --include="*.sh" --include="*.md" . || true
         
     - name: Validate JSON configuration files
       run: |
         # Validate all JSON configuration files
-        find . -name "*.conf" -type f | xargs -I {} sh -c 'echo "Validating {}"; python3 -m json.tool {} > /dev/null'
+        find Configs -name "*.json" -type f | xargs -I {} sh -c 'echo "Validating {}"; python3 -m json.tool {} > /dev/null'
 
   integration-test:
     runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main'
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -138,7 +146,7 @@ jobs:
     - name: Test configuration loading
       run: |
         # Test that all configuration files can be loaded
-        for config in Configs/*.conf; do
+        for config in Configs/*.json; do
           echo "Testing configuration: $config"
           python3 -m json.tool "$config" > /dev/null
           echo "✓ $config is valid JSON"
@@ -165,13 +173,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Check README links
+    - name: Check documentation links
       run: |
         # Install markdown link checker
         npm install -g markdown-link-check
         
-        # Check README for broken links
-        markdown-link-check README.md --config .github/workflows/link-check-config.json || true
+        # Check all markdown files for broken links (recursive)
+        find . -name "*.md" -print0 | xargs -0 -I {} bash -c 'echo Checking {}; markdown-link-check "{}" --config .github/workflows/link-check-config.json'
         
     - name: Generate documentation
       run: |
@@ -190,7 +198,7 @@ jobs:
 
   release-check:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/stable'
     needs: [test, security-scan, code-quality, integration-test]
     steps:
     - name: Checkout code

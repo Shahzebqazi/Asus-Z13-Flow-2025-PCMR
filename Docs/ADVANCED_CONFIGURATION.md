@@ -1,10 +1,17 @@
-# Z13 Advanced Configuration Guide
+# Z13 Advanced Configuration (Consolidated)
 
-**ASUS ROG Flow Z13 (2025) - AMD Strix Halo AI Max+ Advanced System Configuration**
+Advanced topics that matter to most users have been folded into `Docs/User Guide.md` under “Advanced Configuration (essentials)”.
 
-This guide covers advanced configuration topics for power users who want to customize their Z13 installation beyond the default settings.
+Start here:
 
-## 🔧 Custom Configuration Files
+- `Docs/User Guide.md` → Advanced Configuration (essentials)
+- `Docs/User Guide.md` → Extended Troubleshooting
+
+Developer/agent-only details remain in `Docs/Prompt.md`.
+
+If a needed advanced topic is missing, open an issue to add it to the user guide.
+
+## (Deprecated content below)
 
 ### Creating Custom Installation Profiles
 
@@ -194,14 +201,14 @@ The Z13 installation system supports JSON-based configuration files that allow y
 
 ```bash
 # Create your custom configuration
-cp Configs/Zen.conf Configs/MyCustom.conf
-# Edit MyCustom.conf with your preferences
+cp Configs/Zen.json Configs/MyCustom.json
+# Edit MyCustom.json with your preferences
 
 # Use custom configuration
-./pcmr.sh --config Configs/MyCustom.conf
+./pcmr.sh --config Configs/MyCustom.json
 
 # Validate configuration before installation
-python3 -m json.tool Configs/MyCustom.conf
+python3 -m json.tool Configs/MyCustom.json
 ```
 
 ### Advanced Configuration Options

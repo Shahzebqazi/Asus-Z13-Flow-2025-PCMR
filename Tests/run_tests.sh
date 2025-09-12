@@ -125,7 +125,15 @@ run_integration_tests() {
         done
         
         # Test configuration files
-        local configs=("Zen.conf" "Level1Techs.conf" "QuickStart.conf" "Defaults.conf")
+        local configs=(
+            "Zen.json"
+            "Level1Techs.json"
+            "QuickStart.json"
+            "FreshZen.json"
+            "FreshStandard.json"
+            "DualBootZen.json"
+            "DualBootStandard.json"
+        )
         for config in "${configs[@]}"; do
             local config_file="$SCRIPT_DIR/Configs/${config}"
             if [[ -f "$config_file" ]]; then
@@ -239,7 +247,7 @@ run_security_tests() {
         # Check for hardcoded credentials
         local credential_patterns=('password=' 'passwd=' 'secret=' 'key=' 'token=')
         for pattern in "${credential_patterns[@]}"; do
-            local matches=$(grep -ri "$pattern" "$SCRIPT_DIR" --include="*.sh" --include="*.conf" | grep -v "test" | wc -l)
+            local matches=$(grep -ri "$pattern" "$SCRIPT_DIR" --include="*.sh" --include="*.json" | grep -v "test" | wc -l)
             if [[ $matches -gt 0 ]]; then
                 echo "FAIL: Found potential hardcoded credentials: $pattern"
                 ((security_issues++))

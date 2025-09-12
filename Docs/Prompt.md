@@ -4,7 +4,7 @@ Purpose: Enable an AI coding agent to work effectively on this repository with e
 
 Scope and Mental Map:
 - Device: ASUS ROG Flow Z13 (2025) with AMD Ryzen Strix Halo only (guard enforced in `pcmr.sh`).
-- Installer: `pcmr.sh` orchestrates modules in `Modules/`. Secure Boot via systemd-boot + sbctl when enabled.
+- Installer: `pcmr.sh` orchestrates modules in `Modules/`. Secure Boot via systemd-boot + sbctl when enabled (fresh/Linux-only installs). Dual-boot (existing Windows) auto-disables Secure Boot and uses GRUB to preserve Windows boot.
 - Configs: JSON-only under `Configs/`. Scenario profiles exist (Fresh/DualBoot + Zen/Standard). Default: `Configs/Zen.json`.
 - Desktop: enforced to `omarchy` universally.
 - Docs: Per-module docs will live in `Docs/Modules/`; per-config docs in `Docs/Configs/`.
@@ -12,7 +12,6 @@ Scope and Mental Map:
 
 Known Bugs/Work Items:
 - Complete per-module docs in `Docs/Modules/`.
-- PowerShell USB creator for Rufus pending.
 - Review ADVANCED_CONFIGURATION for alignment with new profiles.
 
 Operating Principles:
@@ -38,19 +37,20 @@ Auto-Warning Guidance:
 
 Project History (append chronologically):
 - 2025-09-12: Enforced Strix Halo device guard early; added Secure Boot via systemd-boot + sbctl; unified configs to JSON; added scenario profiles; default desktop set to omarchy; linked config docs; set Zen as default.
+- 2025-09-12: Dual-boot guard added: auto-disable Secure Boot and force GRUB when Windows is detected; added `Windows/Create-Arch-USB.ps1` for backup + safe ESP provisioning; CI updated to lint PowerShell and check all docs links; docs reconciled for Omarchy and SB policy.
+ - 2025-09-12: CI/tests migrated to JSON configs; hardened docs link check (recursive, fail on errors); README updated with profile doc links and CoreInstallation casing; docs updated to reference JSON and Omarchy/Secure Boot policies.
+ - 2025-09-12: Added `--no-tui` flag to `pcmr.sh` and updated help text/examples to use `.json` configs; README troubleshooting now consistent with CLI options.
 
 Open Decisions:
-- Bootloader: systemd-boot (sbctl, UKI optional); GRUB fallback allowed.
+- Bootloader: systemd-boot (sbctl, UKI optional) for fresh installs; GRUB for dual-boot.
 - Desktop: omarchy only (enforced in code and configs).
 
 Tech Debt / Future:
 - Complete `Docs/Modules/*` with inputs/outputs and idempotency details.
-- Implement `Windows/Create-Arch-USB.ps1` and doc.
 - Refine Secure Boot to sign UKI and adopt unified kernel images where feasible.
 
 Active TODOs (sync from repo; update as items complete):
 - Research ASUS Flow Z13 2025 + Arch docs; list missing features [in_progress]
 - Consolidate docs into a base with user stories, requirements, specs, architecture [pending]
 - Create Docs/Modules/*.md documenting each module script [pending]
-- Add PowerShell script to create Arch USB with Rufus + docs [pending]
-- Integrate Secure Boot (sbctl) via systemd-boot or GRUB [pending]
+- Reconcile docs with Secure Boot implementation (Instructions/Documentation, UKI note) [completed]

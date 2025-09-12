@@ -12,7 +12,7 @@ Key settings:
 - Dual boot: gpt (detects Windows EFI and preserves it)
 - Gaming: enabled
 - Snapshots: enabled
-- Secure Boot: enabled (systemd-boot + sbctl)
+- Secure Boot: disabled (uses GRUB to preserve Windows boot)
 
 Notes:
 - Requires EFI System Partition >= 100MB.

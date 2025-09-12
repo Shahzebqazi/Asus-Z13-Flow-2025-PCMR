@@ -12,7 +12,7 @@ Key settings:
 - Dual boot: none (single boot)
 - Gaming: enabled
 - Snapshots: enabled
-- Secure Boot: enabled (systemd-boot + sbctl)
+- Secure Boot: enabled (systemd-boot + sbctl). For dual-boot, keep Secure Boot disabled.
 
 Notes:
 - Requires UEFI mode and sufficient RAM for ZFS.

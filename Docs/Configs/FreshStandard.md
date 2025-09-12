@@ -12,7 +12,7 @@ Key settings:
 - Dual boot: none (single boot)
 - Gaming: disabled
 - Snapshots: enabled
-- Secure Boot: enabled (systemd-boot + sbctl)
+- Secure Boot: enabled (systemd-boot + sbctl). For dual-boot, keep Secure Boot disabled.
 
 Notes:
 - Btrfs subvolumes are created for root, home, var, and snapshots.

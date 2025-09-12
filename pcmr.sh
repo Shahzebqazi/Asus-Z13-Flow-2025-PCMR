@@ -36,6 +36,9 @@ ENABLE_FILESYSTEM_FALLBACK=true
 ENABLE_SNAPSHOTS=true
 ENABLE_SECURE_BOOT=false
 
+# CLI flags
+FORCE_NO_TUI=false
+
 # Disk and partition variables
 DISK_DEVICE=""
 EFI_PART=""
@@ -52,7 +55,7 @@ TIMEZONE=""
 ROOT_PASSWORD=""
 USER_PASSWORD=""
 
-# Default configuration values (loaded from defaults.conf)
+# Default configuration values (loaded from default JSON config)
 DEFAULT_USERNAME="archuser"
 DEFAULT_HOSTNAME="arch-z13"
 DEFAULT_TIMEZONE="UTC"
@@ -597,10 +600,11 @@ OPTIONS:
     --dual-boot-gpt        Modern GPT UEFI dual boot mode (existing Windows)
     --dual-boot-new        Fresh install EFI for new Windows + Arch dual boot
     --zen-kernel           Use zen kernel instead of standard kernel
+    --no-tui               Disable TUI; use plain log output
     --help, -h             Show this help message
 
 EXAMPLES:
-    $0 --config Configs/Zen.conf
+    $0 --config Configs/Zen.json
     $0 --standard
     $0 --dual-boot-gpt --zen-kernel
     $0 --dual-boot-new
@@ -608,9 +612,9 @@ EXAMPLES:
 CONFIGURATION:
     The script can load configuration from a file.
     Available configurations:
-    - Configs/Zen.conf: Performance gaming setup
-    - Configs/Level1Techs.conf: Level1Techs-inspired stable setup
-    - Configs/QuickStart.conf: Minimal setup
+    - Configs/Zen.json: Performance gaming setup
+    - Configs/Level1Techs.json: Level1Techs-inspired stable setup
+    - Configs/QuickStart.json: Minimal setup
 
 DUAL BOOT MODES:
     --dual-boot-gpt        For existing Windows UEFI installations
@@ -623,7 +627,7 @@ FILESYSTEMS:
 
 FEATURES:
     - AMD Strix Halo AI Max+ optimization
-               - Configurable TDP (7W-120W with dynamic power management)
+    - Configurable TDP (7W-120W with dynamic power management)
     - Optimized fan curves
     - Steam and gaming support
     - Controller support (PS4/5, Xbox One/S)
@@ -1134,6 +1138,10 @@ Main() {
                 USE_ZEN_KERNEL=true
                 shift
                 ;;
+            --no-tui)
+                FORCE_NO_TUI=true
+                shift
+                ;;
             --help|-h)
                 ShowHelp
                 exit 0
@@ -1173,6 +1181,12 @@ Main() {
             HandleValidationError "Invalid dual boot mode: $DUAL_BOOT_MODE. Valid modes: gpt, new, none"
             ;;
     esac
+
+    # Enforce Secure Boot policy for dual-boot with existing OS
+    if [[ "$DUAL_BOOT_MODE" == "gpt" && "$ENABLE_SECURE_BOOT" == "true" ]]; then
+        PrintWarning "Dual-boot with existing OS detected. Disabling Secure Boot for compatibility (GRUB will be used)."
+        ENABLE_SECURE_BOOT=false
+    fi
     
     # Validate prerequisites
     ValidatePrerequisites
@@ -1191,26 +1205,31 @@ Main() {
         OfferDetachOption "Pre-Installation Setup"
     fi
     
-    # Load TUI display system
-    if [[ -f "$(dirname "$0")/Modules/TuiDisplay.sh" ]]; then
-        source "$(dirname "$0")/Modules/TuiDisplay.sh"
-        TUI_ENABLED=true
-        init_tui
-        
-        # Set TUI mode based on how script was called
-        if [[ "$use_config" == true ]]; then
-            local config_basename=$(basename "$config_file")
-            config_basename=${config_basename%.json}
-            config_basename=${config_basename%.conf}
-            tui_set_mode "CONFIG" "$config_basename"
-        elif [[ "$#" -eq 0 ]]; then
-            tui_set_mode "AUTO" ""
-        else
-            tui_set_mode "MANUAL" ""
-        fi
-    else
+    # Load TUI display system (unless disabled)
+    if [[ "$FORCE_NO_TUI" == true ]]; then
         TUI_ENABLED=false
-        PrintWarning "TUI display not available, using standard output"
+        PrintStatus "TUI disabled via --no-tui; using standard output"
+    else
+        if [[ -f "$(dirname "$0")/Modules/TuiDisplay.sh" ]]; then
+            source "$(dirname "$0")/Modules/TuiDisplay.sh"
+            TUI_ENABLED=true
+            init_tui
+            
+            # Set TUI mode based on how script was called
+            if [[ "$use_config" == true ]]; then
+                local config_basename=$(basename "$config_file")
+                config_basename=${config_basename%.json}
+                config_basename=${config_basename%.conf}
+                tui_set_mode "CONFIG" "$config_basename"
+            elif [[ "$#" -eq 0 ]]; then
+                tui_set_mode "AUTO" ""
+            else
+                tui_set_mode "MANUAL" ""
+            fi
+        else
+            TUI_ENABLED=false
+            PrintWarning "TUI display not available, using standard output"
+        fi
     fi
     
     # Load and execute installation modules

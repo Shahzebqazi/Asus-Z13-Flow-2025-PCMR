@@ -32,7 +32,6 @@ if [[ ! -t 0 && -e /dev/tty ]]; then
 fi
 
 # Global variables
-MODULES_DIR="$(dirname "$0")/Modules"
 INSTALLATION_STARTED=false
 BASE_SYSTEM_INSTALLED=false
 STATE_HOST_FILE="/tmp/pcmr-installer.state"
@@ -736,7 +735,7 @@ ParseJsonConfig() {
 
 # Function to load default configuration
 LoadDefaultConfig() {
-    local defaults_file="$(dirname "$0")/Configs/Zen.json"
+    local defaults_file="$SCRIPT_DIR/Configs/Zen.json"
     
     if [[ -f "$defaults_file" ]]; then
         PrintStatus "Loading default configuration..."
@@ -1017,7 +1016,7 @@ RestartInstallation() {
         read -p "Choose configuration (1-2): " config_choice
         
         case "$config_choice" in
-            1) LoadConfig "$(dirname "$0")/Configs/Zen.json" ;;
+            1) LoadConfig "$SCRIPT_DIR/Configs/Zen.json" ;;
             2) PrintStatus "Keeping current configuration" ;;
             *) PrintWarning "Invalid choice, keeping current configuration" ;;
         esac
@@ -1250,13 +1249,16 @@ Main() {
         OfferDetachOption "Pre-Installation Setup"
     fi
     
+    # Ensure full repository content is available when run via curl|bash (before loading TUI or modules)
+    SelfBootstrapIfNeeded "$@"
+
     # Load TUI display system (unless disabled)
     if [[ "$FORCE_NO_TUI" == true ]]; then
         TUI_ENABLED=false
         PrintStatus "TUI disabled via --no-tui; using standard output"
     else
-        if [[ -f "$(dirname "$0")/Modules/TuiDisplay.sh" ]]; then
-            source "$(dirname "$0")/Modules/TuiDisplay.sh"
+        if [[ -f "$MODULES_DIR/TuiDisplay.sh" ]]; then
+            source "$MODULES_DIR/TuiDisplay.sh"
             TUI_ENABLED=true
             init_tui
             
@@ -1277,9 +1279,6 @@ Main() {
         fi
     fi
     
-    # Ensure full repository content is available when run via curl|bash
-    SelfBootstrapIfNeeded "$@"
-
     # Load and execute installation modules
     LoadModule "DiskManagement"
     LoadModule "FilesystemSetup"
@@ -1287,8 +1286,8 @@ Main() {
     LoadModule "Bootloader"
     # Optional: ASUS hardware enablement (safe subset)
     if [[ "$ENABLE_HARDWARE_FIXES" == true ]]; then
-        if [[ -f "$(dirname "$0")/Modules/HardwareEnablement.sh" ]]; then
-            source "$(dirname "$0")/Modules/HardwareEnablement.sh"
+        if [[ -f "$MODULES_DIR/HardwareEnablement.sh" ]]; then
+            source "$MODULES_DIR/HardwareEnablement.sh"
             HWE_AVAILABLE=true
         else
             HWE_AVAILABLE=false

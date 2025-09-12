@@ -173,13 +173,13 @@ lspci -v | grep -A 10 "VGA\|Display"
 **Solutions:**
 1. **Force 180Hz mode:**
    ```bash
-   # Test 180Hz manually (native 2800x1600)
-   xrandr --output eDP-1 --mode 2800x1600 --rate 180
+   # Test 180Hz manually (native 2560x1600)
+   xrandr --output eDP-1 --mode 2560x1600 --rate 180
    
    # Make preferred mode persistent in X11 (without hardcoded modeline)
    echo 'Section "Monitor"
        Identifier "eDP-1"
-       Option "PreferredMode" "2800x1600"
+       Option "PreferredMode" "2560x1600"
    EndSection' | sudo tee /etc/X11/xorg.conf.d/20-z13-display.conf
    ```
 

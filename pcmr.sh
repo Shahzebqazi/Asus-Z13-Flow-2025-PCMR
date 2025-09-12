@@ -6,6 +6,7 @@
 # Date: September 11, 2025
 
 set -e
+set -E
 
 # Colors for output
 RED='\033[0;31m'
@@ -252,7 +253,7 @@ ValidateUsername() {
 # Safe input reading functions with validation and retry
 ReadValidatedInput() {
     local prompt="$1"
-    local validation_func="$2"
+    local validation_func="$2"  # name of a function that accepts a single arg (the input)
     local max_attempts="${3:-3}"
     local default_value="$4"
     local input=""
@@ -266,13 +267,12 @@ ReadValidatedInput() {
             read -p "$prompt: " input
         fi
         
-        if [[ -n "$validation_func" ]] && command -v "$validation_func" >/dev/null 2>&1; then
-            if $validation_func "$input"; then
+        if [[ -n "$validation_func" ]] && declare -F "$validation_func" >/dev/null 2>&1; then
+            if "$validation_func" "$input"; then
                 echo "$input"
                 return 0
             fi
         elif [[ -z "$validation_func" ]]; then
-            # No validation function provided, just return input
             echo "$input"
             return 0
         fi
@@ -291,16 +291,40 @@ ReadValidatedChoice() {
     local max_choice="$2"
     local description="$3"
     local max_attempts="${4:-3}"
-    
-    ReadValidatedInput "$prompt" "ValidateChoice $max_choice \"$description\"" "$max_attempts"
+    local attempts=0
+    local input=""
+    while [[ $attempts -lt $max_attempts ]]; do
+        read -p "$prompt: " input
+        if ValidateChoice "$input" "$max_choice" "$description"; then
+            echo "$input"
+            return 0
+        fi
+        ((attempts++))
+        if [[ $attempts -lt $max_attempts ]]; then
+            PrintWarning "Please try again ($((max_attempts - attempts)) attempts remaining)"
+        fi
+    done
+    HandleFatalError "Maximum validation attempts reached for: $prompt"
 }
 
 ReadValidatedYesNo() {
     local prompt="$1"
     local description="$2"
     local max_attempts="${3:-3}"
-    
-    ReadValidatedInput "$prompt" "ValidateYesNo \"$description\"" "$max_attempts"
+    local attempts=0
+    local input=""
+    while [[ $attempts -lt $max_attempts ]]; do
+        read -p "$prompt (y/n): " input
+        if ValidateYesNo "$input" "$description"; then
+            echo "$input"
+            return 0
+        fi
+        ((attempts++))
+        if [[ $attempts -lt $max_attempts ]]; then
+            PrintWarning "Please try again ($((max_attempts - attempts)) attempts remaining)"
+        fi
+    done
+    HandleFatalError "Maximum validation attempts reached for: $prompt"
 }
 
 # Package installation verification functions
@@ -1010,7 +1034,7 @@ CleanupAndFinish() {
 # Main function
 Main() {
     # Set up error handling
-    trap CleanupOnFailure EXIT
+    trap CleanupOnFailure ERR
     
     # Parse command line arguments
     local use_config=false
@@ -1100,16 +1124,16 @@ Main() {
     if [[ -f "$(dirname "$0")/Modules/TuiDisplay.sh" ]]; then
         source "$(dirname "$0")/Modules/TuiDisplay.sh"
         TUI_ENABLED=true
-        InitTui
+        init_tui
         
         # Set TUI mode based on how script was called
         if [[ "$use_config" == true ]]; then
             local config_basename=$(basename "$config_file" .conf)
-            TuiSetMode "CONFIG" "$config_basename"
+            tui_set_mode "CONFIG" "$config_basename"
         elif [[ "$#" -eq 0 ]]; then
-            TuiSetMode "AUTO" ""
+            tui_set_mode "AUTO" ""
         else
-            TuiSetMode "MANUAL" ""
+            tui_set_mode "MANUAL" ""
         fi
     else
         TUI_ENABLED=false
@@ -1120,12 +1144,13 @@ Main() {
     LoadModule "DiskManagement"
     LoadModule "FilesystemSetup"
     LoadModule "CoreInstallation"
+    LoadModule "Bootloader"
     
     # Run installation sequence
     if [[ "$TUI_ENABLED" == true ]]; then
-        AddLogMessage "Starting PCMR Arch Linux Installation"
-        AddLogMessage "Configuration: ${DUAL_BOOT_MODE:-Auto} | $([ "$USE_ZEN_KERNEL" == true ] && echo "Zen" || echo "Standard") kernel"
-        AddLogMessage "Filesystem: $FILESYSTEM | Desktop: $DESKTOP_ENVIRONMENT"
+        add_log_message "Starting PCMR Arch Linux Installation"
+        add_log_message "Configuration: ${DUAL_BOOT_MODE:-Auto} | $([ "$USE_ZEN_KERNEL" == true ] && echo "Zen" || echo "Standard") kernel"
+        add_log_message "Filesystem: $FILESYSTEM | Desktop: $DESKTOP_ENVIRONMENT"
     fi
     
     # Execute installation phases
@@ -1133,6 +1158,9 @@ Main() {
     filesystem_setup
     CoreInstallation
     BASE_SYSTEM_INSTALLED=true
+    
+    # Install bootloader before hardening
+    bootloader_setup
     
     # Load and run system configuration
     LoadModule "SystemConfiguration"
@@ -1155,9 +1183,9 @@ Main() {
     backup_recovery_setup
     
     if [[ "$TUI_ENABLED" == true ]]; then
-        AddLogMessage "🎉 Installation completed successfully!"
-        AddLogMessage "System ready for first boot"
-        CleanupTui
+        add_log_message "🎉 Installation completed successfully!"
+        add_log_message "System ready for first boot"
+        cleanup_tui
     fi
     
     CleanupAndFinish

@@ -77,7 +77,7 @@ system_configuration() {
         echo '$HOSTNAME' > /etc/hostname
 
         # Configure hosts file using validated hostname
-        cat > /etc/hosts << 'EOH'
+        cat > /etc/hosts << EOH
 127.0.0.1   localhost
 ::1         localhost
 127.0.1.1   $HOSTNAME.localdomain $HOSTNAME
@@ -91,6 +91,13 @@ EOH
 
         # Configure sudo
         echo '%wheel ALL=(ALL:ALL) ALL' >> /etc/sudoers
+    "
+
+    # Install AUR helper (yay) inside chroot as the new user
+    PrintStatus "Installing AUR helper (yay)..."
+    arch-chroot /mnt /bin/bash -c "
+        pacman -S --noconfirm --needed git base-devel
+        su - '$USERNAME' -c 'cd ~ && rm -rf yay && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si --noconfirm'
     "
 
     # Set passwords non-interactively

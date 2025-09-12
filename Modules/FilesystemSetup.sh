@@ -17,13 +17,15 @@ setup_zfs() {
     
     # Load ZFS modules with error checking
     PrintStatus "Loading ZFS kernel modules..."
-    if ! modprobe zfs; then
+    if ! modprobe zfs 2>/dev/null; then
         HandleRecoverableError "Failed to load ZFS kernel modules"
+        return 1
     fi
     
     # Verify ZFS is available
-    if ! command -v zpool >/dev/null 2>&1; then
+    if ! command -v zpool >/dev/null 2>&1 || ! command -v zfs >/dev/null 2>&1; then
         HandleRecoverableError "ZFS utilities not available after module loading"
+        return 1
     fi
     
     # Create ZFS pool

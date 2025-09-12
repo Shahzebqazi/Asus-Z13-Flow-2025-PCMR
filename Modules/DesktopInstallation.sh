@@ -35,25 +35,18 @@ desktop_installation() {
 install_omarchy() {
     PrintStatus "Installing Omarchy tiling window manager..."
     
-    arch-chroot /mnt /bin/zsh << 'EOF'
-# Install X11 and display manager with verification
-InstallPackageGroupWithVerification xorg-server xorg-xinit chroot
-InstallPackageGroupWithVerification lightdm lightdm-gtk-greeter chroot
-InstallPackageGroupWithVerification firefox alacritty thunar chroot
-InstallPackageGroupWithVerification pulseaudio pulseaudio-alsa pavucontrol chroot
-InstallPackageWithVerification network-manager-applet "Network Manager Applet" chroot
+    # Install X11 and display manager with verification
+    InstallPackageGroupWithVerification xorg-server xorg-xinit chroot
+    InstallPackageGroupWithVerification lightdm lightdm-gtk-greeter chroot
+    InstallPackageGroupWithVerification firefox alacritty thunar chroot
+    InstallPackageGroupWithVerification pulseaudio pulseaudio-alsa pavucontrol chroot
+    InstallPackageWithVerification network-manager-applet "Network Manager Applet" chroot
 
-# Install build tools for AUR packages
-InstallPackageGroupWithVerification git base-devel chroot
-cd /tmp
-git clone https://aur.archlinux.org/omarchy.git
-cd omarchy
-makepkg -si --noconfirm
+    # Install Omarchy from AUR via yay as user
+    arch-chroot /mnt sudo -u "$USERNAME" yay -S --noconfirm omarchy || InstallAurPackageWithVerification omarchy "Omarchy WM" yay
 
-# Enable display manager
-systemctl enable lightdm
-
-EOF
+    # Enable display manager
+    arch-chroot /mnt systemctl enable lightdm
 
     PrintStatus "Omarchy installation completed"
 }
@@ -62,20 +55,17 @@ EOF
 install_xfce() {
     PrintStatus "Installing XFCE desktop environment..."
     
-    arch-chroot /mnt /bin/zsh << 'EOF'
-# Install X11 and display manager with verification
-InstallPackageGroupWithVerification xorg-server xorg-xinit chroot
-InstallPackageGroupWithVerification lightdm lightdm-gtk-greeter chroot
+    # Install X11 and display manager with verification
+    InstallPackageGroupWithVerification xorg-server xorg-xinit chroot
+    InstallPackageGroupWithVerification lightdm lightdm-gtk-greeter chroot
 
-# Install XFCE desktop environment with verification
-InstallPackageGroupWithVerification xfce4 xfce4-goodies chroot
-InstallPackageGroupWithVerification firefox alacritty thunar chroot
-InstallPackageWithVerification network-manager-applet "Network Manager Applet" chroot
+    # Install XFCE desktop environment with verification
+    InstallPackageGroupWithVerification xfce4 xfce4-goodies chroot
+    InstallPackageGroupWithVerification firefox alacritty thunar chroot
+    InstallPackageWithVerification network-manager-applet "Network Manager Applet" chroot
 
-# Enable display manager
-systemctl enable lightdm
-
-EOF
+    # Enable display manager
+    arch-chroot /mnt systemctl enable lightdm
 
     PrintStatus "XFCE installation completed"
 }
@@ -84,20 +74,17 @@ EOF
 install_i3() {
     PrintStatus "Installing i3 window manager..."
     
-    arch-chroot /mnt /bin/zsh << 'EOF'
-# Install X11 and display manager with verification
-InstallPackageGroupWithVerification xorg-server xorg-xinit chroot
-InstallPackageGroupWithVerification lightdm lightdm-gtk-greeter chroot
+    # Install X11 and display manager with verification
+    InstallPackageGroupWithVerification xorg-server xorg-xinit chroot
+    InstallPackageGroupWithVerification lightdm lightdm-gtk-greeter chroot
 
-# Install i3 window manager with verification
-InstallPackageGroupWithVerification i3-wm i3status i3lock dmenu chroot
-InstallPackageGroupWithVerification firefox alacritty thunar chroot
-InstallPackageWithVerification network-manager-applet "Network Manager Applet" chroot
+    # Install i3 window manager with verification
+    InstallPackageGroupWithVerification i3-wm i3status i3lock dmenu chroot
+    InstallPackageGroupWithVerification firefox alacritty thunar chroot
+    InstallPackageWithVerification network-manager-applet "Network Manager Applet" chroot
 
-# Enable display manager
-systemctl enable lightdm
-
-EOF
+    # Enable display manager
+    arch-chroot /mnt systemctl enable lightdm
 
     PrintStatus "i3 installation completed"
 }
@@ -106,15 +93,12 @@ EOF
 install_gnome() {
     PrintStatus "Installing GNOME desktop environment..."
     
-    arch-chroot /mnt /bin/zsh << 'EOF'
-# Install GNOME with verification
-InstallPackageGroupWithVerification gnome gnome-extra gdm chroot
-InstallPackageWithVerification firefox "Firefox Browser" chroot
+    # Install GNOME with verification
+    InstallPackageGroupWithVerification gnome gnome-extra gdm chroot
+    InstallPackageWithVerification firefox "Firefox Browser" chroot
 
-# Enable display manager
-systemctl enable gdm
-
-EOF
+    # Enable display manager
+    arch-chroot /mnt systemctl enable gdm
 
     PrintStatus "GNOME installation completed"
 }
@@ -123,15 +107,12 @@ EOF
 install_kde() {
     PrintStatus "Installing KDE Plasma desktop environment..."
     
-    arch-chroot /mnt /bin/zsh << 'EOF'
-# Install KDE Plasma with verification
-InstallPackageGroupWithVerification plasma kde-applications sddm chroot
-InstallPackageWithVerification firefox "Firefox Browser" chroot
+    # Install KDE Plasma with verification
+    InstallPackageGroupWithVerification plasma kde-applications sddm chroot
+    InstallPackageWithVerification firefox "Firefox Browser" chroot
 
-# Enable display manager
-systemctl enable sddm
-
-EOF
+    # Enable display manager
+    arch-chroot /mnt systemctl enable sddm
 
     PrintStatus "KDE installation completed"
 }

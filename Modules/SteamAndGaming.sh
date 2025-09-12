@@ -4,42 +4,33 @@
 steam_gaming_setup() {
     PrintHeader "Steam and Gaming Setup"
     
-    arch-chroot /mnt /bin/zsh << 'EOF'
-# Install Steam and gaming packages
-PrintStatus "Installing Steam and gaming packages..."
+    # Gate heavy gaming installs
+    if [[ "$INSTALL_GAMING" != true ]]; then
+        PrintStatus "Gaming installation is disabled by configuration"
+        return 0
+    fi
 
-# Enable multilib repository
-sed -i '/\[multilib\]/,/Include/s/^#//' /etc/pacman.conf
-SafePacman chroot -Sy
+    # Enable multilib and refresh
+    arch-chroot /mnt sed -i '/\[multilib\]/,/Include/s/^#//' /etc/pacman.conf
+    SafePacman chroot -Sy
 
-# Install Steam and gaming essentials with verification
-InstallPackageGroupWithVerification steam steam-native-runtime chroot
-InstallPackageGroupWithVerification gamemode mangohud goverlay chroot
-InstallPackageGroupWithVerification lutris wine-staging discord obs-studio chroot
+    # Core Steam and essentials
+    InstallPackageGroupWithVerification steam steam-native-runtime chroot
+    InstallPackageGroupWithVerification gamemode mangohud goverlay chroot
+    InstallPackageGroupWithVerification lutris wine-staging discord obs-studio chroot
 
-# Install gaming libraries with verification
-InstallPackageGroupWithVerification lib32-mesa lib32-vulkan-radeon chroot
-InstallPackageGroupWithVerification lib32-vulkan-icd-loader lib32-vulkan-mesa-layers chroot
+    # Gaming libraries
+    InstallPackageGroupWithVerification lib32-mesa lib32-vulkan-radeon chroot
+    InstallPackageGroupWithVerification lib32-vulkan-icd-loader lib32-vulkan-mesa-layers chroot
 
-# Install additional gaming tools with verification
-InstallPackageGroupWithVerification protontricks protonup-qt chroot
-InstallPackageGroupWithVerification steam-tui steam-launcher chroot
+    # Some AUR items via yay
+    InstallPackageGroupWithVerification protontricks protonup-qt chroot
+    arch-chroot /mnt sudo -u "$USERNAME" yay -S --noconfirm steam-tui steam-launcher || true
+    arch-chroot /mnt sudo -u "$USERNAME" yay -S --noconfirm dxvk-bin vkd3d-proton heroic-games-launcher-bin protondb-cli steam-rom-manager steam-meta steam-tinker-launch wine-ge-custom proton-ge-custom-bin || true
 
-# Install additional Valve/Steam/Proton libraries and tools with verification
-PrintStatus "Installing advanced gaming libraries..."
-InstallPackageGroupWithVerification dxvk-bin vkd3d-proton chroot
-InstallPackageGroupWithVerification heroic-games-launcher-bin protondb-cli chroot
-InstallPackageGroupWithVerification steam-rom-manager steam-meta chroot
-InstallPackageGroupWithVerification steam-tinker-launch wine-ge-custom chroot
-InstallPackageWithVerification proton-ge-custom-bin "Proton GE Custom" chroot
-
-# Install controller support packages with verification
-PrintStatus "Installing controller support packages..."
-InstallPackageGroupWithVerification xpadneo-dkms xpadneo-utils ds4drv xboxdrv chroot
-InstallPackageGroupWithVerification jstest-gtk antimicrox sc-controller chroot
-InstallPackageGroupWithVerification bluez bluez-utils blueman chroot
-
-EOF
+    # Controller support
+    InstallPackageGroupWithVerification bluez bluez-utils blueman chroot
+    arch-chroot /mnt sudo -u "$USERNAME" yay -S --noconfirm xpadneo-dkms xpadneo-utils ds4drv xboxdrv jstest-gtk antimicrox sc-controller || true
 
     PrintStatus "Steam and gaming setup completed"
 }

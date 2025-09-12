@@ -5,7 +5,7 @@
 detect_disk() {
     PrintHeader "Detecting Available Disks"
     
-    local disks=($(lsblk -d -n -o NAME | grep -E '^[a-z]+$'))
+    local disks=($(lsblk -d -n -o NAME,TYPE | awk '$2=="disk"{print $1}'))
     
     if [[ ${#disks[@]} -eq 0 ]]; then
         HandleFatalError "No disks found"
@@ -355,6 +355,9 @@ setup_dual_boot_new() {
         PrintStatus "EFI: $EFI_PART"
         PrintStatus "Root: $ROOT_PART"
         PrintStatus "Swap: $SWAP_PART"
+        # Format new EFI partition as FAT32
+        PrintStatus "Formatting EFI partition (FAT32): $EFI_PART"
+        mkfs.fat -F32 "$EFI_PART"
     else
         HandleFatalError "Could not detect all required partitions intelligently"
     fi
@@ -436,6 +439,9 @@ setup_single_boot() {
         PrintStatus "EFI: $EFI_PART"
         PrintStatus "Root: $ROOT_PART"
         PrintStatus "Swap: $SWAP_PART"
+        # Format EFI partition as FAT32 for new single-boot setup
+        PrintStatus "Formatting EFI partition (FAT32): $EFI_PART"
+        mkfs.fat -F32 "$EFI_PART"
     else
         HandleFatalError "Could not detect all required partitions intelligently"
     fi

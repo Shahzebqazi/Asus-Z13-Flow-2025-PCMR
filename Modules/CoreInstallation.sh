@@ -10,13 +10,11 @@ CoreInstallation() {
     
     # Install base system
     PrintStatus "Installing base system packages..."
-    pacstrap /mnt base linux linux-firmware systemd networkmanager vim
-    
-    # Install kernel based on choice
+    local kernel_pkgs=(linux linux-firmware)
     if [[ "$USE_ZEN_KERNEL" == true ]]; then
-        PrintStatus "Installing Zen kernel..."
-        pacstrap /mnt linux-zen linux-zen-headers
+        kernel_pkgs=(linux-zen linux-zen-headers linux-firmware)
     fi
+    pacstrap /mnt base "${kernel_pkgs[@]}" systemd networkmanager vim
     
     # Install additional packages (zsh should be available in live environment)
     pacstrap /mnt base-devel git curl wget

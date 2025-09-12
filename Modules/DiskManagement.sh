@@ -148,7 +148,14 @@ mount_partitions() {
     PrintStatus "Mounting partitions"
     mount "$ROOT_PART" /mnt
     mkdir -p /mnt/boot
-    mount "$EFI_PART" /mnt/boot
+    if [[ "$DUAL_BOOT_MODE" == "new" ]]; then
+        # Fresh install: mount ESP at /boot (systemd-boot flow)
+        mount "$EFI_PART" /mnt/boot
+    else
+        # Dual-boot: mount ESP at /boot/EFI (GRUB flow keeps /boot on root FS)
+        mkdir -p /mnt/boot/EFI
+        mount "$EFI_PART" /mnt/boot/EFI
+    fi
     if [[ -n "$SWAP_PART" ]]; then swapon "$SWAP_PART" ; fi
 }
 

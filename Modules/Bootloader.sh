@@ -17,9 +17,9 @@ bootloader_setup() {
         PrintStatus "Installing GRUB for dual-boot"
         pacstrap /mnt grub efibootmgr os-prober || HandleFatalError "Failed to install GRUB"
         arch-chroot /mnt os-prober || true
-        # Ensure /boot/grub exists (some environments fail to create it automatically)
+        # For dual-boot, ESP is mounted at /boot/EFI; keep /boot on root FS for kernels
         arch-chroot /mnt mkdir -p /boot/grub || HandleFatalError "cannot create /boot/grub"
-        arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch || HandleFatalError "grub-install failed"
+        arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/EFI --bootloader-id=Arch || HandleFatalError "grub-install failed"
         # Ensure os-prober is enabled for GRUB
         if [[ -f /mnt/etc/default/grub ]]; then
             if grep -q '^GRUB_DISABLE_OS_PROBER=' /mnt/etc/default/grub; then

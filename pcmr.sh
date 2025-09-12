@@ -27,13 +27,14 @@ STATE_FILE="$STATE_DIR/state"
 DUAL_BOOT_MODE=""
 USE_ZEN_KERNEL=false
 FILESYSTEM="zfs"
-DESKTOP_ENVIRONMENT="xfce"
+DESKTOP_ENVIRONMENT="omarchy"
 INSTALL_GAMING=false
 INSTALL_POWER_MGMT=true
 ENABLE_HARDWARE_FIXES=true
 ENABLE_ERROR_RECOVERY=true
 ENABLE_FILESYSTEM_FALLBACK=true
 ENABLE_SNAPSHOTS=true
+ENABLE_SECURE_BOOT=false
 
 # Disk and partition variables
 DISK_DEVICE=""
@@ -591,24 +592,25 @@ USAGE:
     $0 [OPTIONS]
 
 OPTIONS:
-    --config FILE          Load configuration from specified file (default: Configs/pcmr-standard.conf)
-    --standard             Ignore config file and use standard installation
+    --config FILE          Load configuration from specified JSON file
+    --standard             Ignore config file and use interactive installation
     --dual-boot-gpt        Modern GPT UEFI dual boot mode (existing Windows)
     --dual-boot-new        Fresh install EFI for new Windows + Arch dual boot
     --zen-kernel           Use zen kernel instead of standard kernel
     --help, -h             Show this help message
 
 EXAMPLES:
-    $0 --config Configs/pcmr-standard.conf
+    $0 --config Configs/Zen.conf
     $0 --standard
     $0 --dual-boot-gpt --zen-kernel
     $0 --dual-boot-new
 
 CONFIGURATION:
-    The script can load configuration from a file (default: Configs/pcmr-standard.conf)
+    The script can load configuration from a file.
     Available configurations:
-    - Configs/PcmrStandard.conf: Standard Z13 Flow configuration
-    - Configs/Level1Techs.conf: Level1Techs-inspired configuration
+    - Configs/Zen.conf: Performance gaming setup
+    - Configs/Level1Techs.conf: Level1Techs-inspired stable setup
+    - Configs/QuickStart.conf: Minimal setup
 
 DUAL BOOT MODES:
     --dual-boot-gpt        For existing Windows UEFI installations
@@ -629,6 +631,7 @@ FEATURES:
     - Power profiles (Efficient, AI, Gaming)
     - Hardware-specific fixes
     - Comprehensive error handling
+    - Secure Boot (optional via config: enable_secure_boot=true; systemd-boot + sbctl)
 
 For more information, see README.md
 EOF
@@ -665,6 +668,7 @@ ParseJsonConfig() {
     
     # Parse hardware settings
     ENABLE_HARDWARE_FIXES=$(echo "$json_content" | grep -o '"enable_hardware_fixes"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    ENABLE_SECURE_BOOT=$(echo "$json_content" | grep -o '"enable_secure_boot"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
     
     # Parse recovery settings
     ENABLE_ERROR_RECOVERY=$(echo "$json_content" | grep -o '"enable_error_recovery"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
@@ -677,18 +681,19 @@ ParseJsonConfig() {
     HOSTNAME=${HOSTNAME:-$DEFAULT_HOSTNAME}
     TIMEZONE=${TIMEZONE:-$DEFAULT_TIMEZONE}
     FILESYSTEM=${FILESYSTEM:-"zfs"}
-    DESKTOP_ENVIRONMENT=${DESKTOP_ENVIRONMENT:-"xfce"}
+    # Enforce omarchy desktop regardless of config
+    DESKTOP_ENVIRONMENT="omarchy"
 }
 
 # Function to load default configuration
 LoadDefaultConfig() {
-    local defaults_file="$(dirname "$0")/Configs/Defaults.conf"
+    local defaults_file="$(dirname "$0")/Configs/Zen.json"
     
     if [[ -f "$defaults_file" ]]; then
         PrintStatus "Loading default configuration..."
         ParseJsonConfig "$defaults_file"
     else
-        PrintWarning "Default configuration not found, using hardcoded defaults"
+        PrintWarning "Default configuration (Zen.json) not found, using hardcoded defaults"
     fi
 }
 
@@ -702,12 +707,11 @@ LoadConfig() {
     
     PrintStatus "Loading configuration from: $config_file"
     
-    # Check if it's a JSON configuration file
+    # Require JSON configuration files only
     if grep -q '^[[:space:]]*{' "$config_file"; then
         ParseJsonConfig "$config_file"
     else
-        # Legacy shell script configuration
-        source "$config_file"
+        HandleFatalError "Unsupported configuration format. Please provide a JSON config file."
     fi
     
     PrintStatus "Configuration loaded successfully"
@@ -802,6 +806,8 @@ ValidatePrerequisites() {
         HandleFatalError "This script should not be run inside a chroot environment"
     fi
     
+    # Device guard is enforced early in Main()
+
     # Check if zsh is available (should be in Arch live environment)
     if ! command -v zsh >/dev/null 2>&1; then
         PrintWarning "Zsh not found in live environment. Installing during setup..."
@@ -956,18 +962,20 @@ RestartInstallation() {
     
     if [[ "$change_config" =~ ^[Yy] ]]; then
         echo "Available configurations:"
-        echo "1) Zen.conf (Performance gaming setup)"
-        echo "2) Level1Techs.conf (Stable setup)"
-        echo "3) QuickStart.conf (Minimal setup)"
-        echo "4) Keep current configuration"
+        echo "1) FreshZen.json (Fresh install, Zen kernel)"
+        echo "2) FreshStandard.json (Fresh install, standard kernel)"
+        echo "3) DualBootZen.json (Dual-boot with Windows, Zen kernel)"
+        echo "4) DualBootStandard.json (Dual-boot with Windows, standard kernel)"
+        echo "5) Keep current configuration"
         
-        read -p "Choose configuration (1-4): " config_choice
+        read -p "Choose configuration (1-5): " config_choice
         
         case "$config_choice" in
-            1) LoadConfig "$(dirname "$0")/Configs/Zen.conf" ;;
-            2) LoadConfig "$(dirname "$0")/Configs/Level1Techs.conf" ;;
-            3) LoadConfig "$(dirname "$0")/Configs/QuickStart.conf" ;;
-            4) PrintStatus "Keeping current configuration" ;;
+            1) LoadConfig "$(dirname "$0")/Configs/FreshZen.json" ;;
+            2) LoadConfig "$(dirname "$0")/Configs/FreshStandard.json" ;;
+            3) LoadConfig "$(dirname "$0")/Configs/DualBootZen.json" ;;
+            4) LoadConfig "$(dirname "$0")/Configs/DualBootStandard.json" ;;
+            5) PrintStatus "Keeping current configuration" ;;
             *) PrintWarning "Invalid choice, keeping current configuration" ;;
         esac
     fi
@@ -1078,6 +1086,27 @@ Main() {
     # Set up error handling
     trap CleanupOnFailure ERR
     
+    # Enforce device guard early: AMD Ryzen Strix Halo only
+    local cpu_info=""
+    if command -v lscpu >/dev/null 2>&1; then
+        cpu_info=$(lscpu 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    else
+        cpu_info=$(cat /proc/cpuinfo 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    fi
+    if [[ -z "$cpu_info" ]]; then
+        HandleFatalError "Unable to detect CPU information. This installer is restricted to AMD Ryzen Strix Halo platforms."
+    fi
+    # Require AMD and either explicit Strix Halo mention or Ryzen AI 395 identifier
+    if ! echo "$cpu_info" | grep -q "amd" || ! echo "$cpu_info" | grep -Eiq "strix[[:space:]-]?halo|ryzen[[:space:]]*ai|\b395\b"; then
+        HandleFatalError "Unsupported device/CPU. This installer is restricted to AMD Ryzen Strix Halo platforms."
+    fi
+    # Soft GPU presence check (non-fatal)
+    if command -v lspci >/dev/null 2>&1; then
+        if ! lspci | tr '[:upper:]' '[:lower:]' | grep -Eiq "amdgpu|advanced micro devices|amd.*graphics"; then
+            PrintWarning "AMDGPU device not detected. Proceeding due to CPU match, but installation may fail."
+        fi
+    fi
+    
     # Parse command line arguments
     local use_config=false
     local config_file=""
@@ -1123,7 +1152,7 @@ Main() {
     # Load configuration if requested
     if [[ "$use_config" == true ]]; then
         if [[ -z "$config_file" ]]; then
-            config_file="Configs/Zen.conf"
+            config_file="Configs/Zen.json"
         fi
         LoadConfig "$config_file"
     else
@@ -1170,7 +1199,9 @@ Main() {
         
         # Set TUI mode based on how script was called
         if [[ "$use_config" == true ]]; then
-            local config_basename=$(basename "$config_file" .conf)
+            local config_basename=$(basename "$config_file")
+            config_basename=${config_basename%.json}
+            config_basename=${config_basename%.conf}
             tui_set_mode "CONFIG" "$config_basename"
         elif [[ "$#" -eq 0 ]]; then
             tui_set_mode "AUTO" ""

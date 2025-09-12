@@ -10,9 +10,9 @@ CoreInstallation() {
     
     # Install base system
     PrintStatus "Installing base system packages..."
-    local kernel_pkgs=(linux linux-firmware)
+    local kernel_pkgs=(linux linux-firmware amd-ucode)
     if [[ "$USE_ZEN_KERNEL" == true ]]; then
-        kernel_pkgs=(linux-zen linux-zen-headers linux-firmware)
+        kernel_pkgs=(linux-zen linux-zen-headers linux-firmware amd-ucode)
     fi
     pacstrap /mnt base "${kernel_pkgs[@]}" systemd networkmanager vim
     

@@ -1,22 +1,21 @@
 {
   "metadata": {
-    "name": "Level1Techs Configuration",
-    "description": "Based on Wendell's 'The Ultimate Arch + Secureboot Guide for Ryzen AI Max'",
-    "author": "sqazi (adapted from Wendell's original guide)",
-    "version": "1.0.0",
-    "source_url": "https://forum.level1techs.com/t/the-ultimate-arch-secureboot-guide-for-ryzen-ai-max-ft-hp-g1a-128gb-8060s-monster-laptop/230652"
+    "name": "Fresh Install - Standard Kernel",
+    "description": "Fresh single-boot install with standard kernel",
+    "author": "PCMR",
+    "version": "1.0.0"
   },
   "system": {
     "default_username": "",
-    "default_hostname": "",
-    "default_timezone": "",
+    "default_hostname": "arch-z13",
+    "default_timezone": "UTC",
     "locale": "en_US.UTF-8"
   },
   "installation": {
     "dual_boot_mode": "none",
     "kernel_variant": "standard",
     "default_filesystem": "btrfs",
-    "default_desktop": "xfce",
+    "default_desktop": "omarchy",
     "enable_gaming": false,
     "enable_snapshots": true,
     "enable_secure_boot": true,
@@ -46,3 +45,4 @@
     "enable_fresh_reinstall": true
   }
 }
+

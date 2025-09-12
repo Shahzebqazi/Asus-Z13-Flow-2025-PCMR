@@ -1,20 +1,20 @@
 {
   "metadata": {
-    "name": "Zen Kernel Performance Configuration",
-    "description": "Performance-optimized setup with Zen kernel for gaming and desktop responsiveness",
-    "author": "sqazi",
+    "name": "Dual Boot - Zen Kernel",
+    "description": "Dual-boot with existing Windows (UEFI) using Zen kernel",
+    "author": "PCMR",
     "version": "1.0.0"
   },
   "system": {
     "default_username": "",
-    "default_hostname": "",
-    "default_timezone": "",
+    "default_hostname": "arch-z13",
+    "default_timezone": "UTC",
     "locale": "en_US.UTF-8"
   },
   "installation": {
-    "dual_boot_mode": "none",
+    "dual_boot_mode": "gpt",
     "kernel_variant": "zen",
-    "default_filesystem": "zfs",
+    "default_filesystem": "btrfs",
     "default_desktop": "omarchy",
     "enable_gaming": true,
     "enable_snapshots": true,
@@ -31,24 +31,18 @@
       "ai": 45,
       "gaming": 93,
       "maximum": 120
-    },
-    "battery_care": {
-      "start_charge_threshold": 40,
-      "stop_charge_threshold": 80
     }
   },
   "hardware": {
     "enable_hardware_fixes": true,
     "enable_wifi_stability_fixes": true,
     "enable_audio_firmware": true,
-    "enable_touchpad_fixes": true,
-    "enable_180hz_display": true,
-    "enable_variable_refresh_rate": true
+    "enable_touchpad_fixes": true
   },
   "recovery": {
     "enable_error_recovery": true,
     "enable_filesystem_fallback": true,
-    "enable_fresh_reinstall": true,
-    "enable_detached_mode": true
+    "enable_fresh_reinstall": true
   }
 }
+

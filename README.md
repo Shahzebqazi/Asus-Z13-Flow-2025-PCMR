@@ -1,5 +1,5 @@
-# PCMR Arch Linux Installation Script
-**ASUS ROG Flow Z13 (2025) - AMD Strix Halo AI Max+**
+# PCMR Arch Installer for ASUS ROG Flow Z13 (2025)
+**AMD Ryzen Strix Halo**
 
 Transform your ASUS ROG Flow Z13 into the ultimate portable Linux powerhouse with this comprehensive installation script. Get a fully optimized Arch Linux system with modern zsh shell, gaming support, power management, and hardware-specific fixes in under 30 minutes.
 
@@ -40,10 +40,10 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/main/pcmr.sh 
 ### **Using Configuration Files**
 ```bash
 # Download and run with Level1Techs config
-./pcmr.sh --config Configs/Level1Techs.conf
+./pcmr.sh --config Configs/Level1Techs.json
 
 # Run with Zen kernel optimization
-./pcmr.sh --zen-kernel --config Configs/Zen.conf
+./pcmr.sh --zen-kernel --config Configs/Zen.json
 
 # Dual-boot with existing Windows
 ./pcmr.sh --dual-boot-gpt --zen-kernel
@@ -58,21 +58,33 @@ Perfect for most users - uses optimal settings for Z13:
 ./pcmr.sh --zen-kernel
 ```
 
-### **⚙️ Customized Install**
-Choose your setup with pre-configured profiles:
+### **⚙️ Customized Install (Pick ONE profile, no extra flags)**
 ```bash
-# Performance gaming setup (Wendell's L1T config)
-./pcmr.sh --config Configs/Level1Techs.conf
+# Fresh SSD, Zen kernel (recommended default)
+./pcmr.sh --config Configs/FreshZen.json
 
-# Maximum performance (Zen kernel + gaming)
-./pcmr.sh --config Configs/Zen.conf --zen-kernel
+# Fresh SSD, standard kernel
+./pcmr.sh --config Configs/FreshStandard.json
 
-# Minimal desktop setup
-./pcmr.sh --config Configs/QuickStart.conf
+# Dual-boot with Windows, Zen kernel
+./pcmr.sh --config Configs/DualBootZen.json
 
-# Dual-boot with existing Windows
-./pcmr.sh --dual-boot-gpt --zen-kernel
+# Dual-boot with Windows, standard kernel
+./pcmr.sh --config Configs/DualBootStandard.json
 ```
+
+### Secure Boot (optional)
+This installer supports Secure Boot using systemd-boot + sbctl when enabled in your config:
+```json
+{
+  "installation": {
+    "enable_secure_boot": true
+  }
+}
+```
+Notes:
+- Keys are created and enrolled via sbctl; kernel and bootloader are signed.
+- GRUB remains available when Secure Boot is disabled.
 
 ### **🎛️ Manual Configuration**
 Want full control? Use standard mode and answer prompts:
@@ -80,15 +92,15 @@ Want full control? Use standard mode and answer prompts:
 ./pcmr.sh --standard
 ```
 
-## 💡 **Which Option Should I Choose?**
+## 💡 **Which Profile Should I Choose?**
 
-| I Want... | Use This Command |
+| I Want... | Use This Profile |
 |-----------|------------------|
-| **Gaming powerhouse** | `./pcmr.sh --config Configs/zen.conf` |
-| **Work laptop** | `./pcmr.sh --config Configs/level1techs.conf` |
-| **Keep Windows** | `./pcmr.sh --dual-boot-gpt --zen-kernel` |
-| **Fast minimal setup** | `./pcmr.sh --config Configs/QuickStart.conf` |
-| **Full control** | `./pcmr.sh --standard` |
+| **Fresh install, best performance** | `Configs/FreshZen.json` |
+| **Fresh install, stable standard kernel** | `Configs/FreshStandard.json` |
+| **Keep Windows (dual-boot), best performance** | `Configs/DualBootZen.json` |
+| **Keep Windows (dual-boot), standard kernel** | `Configs/DualBootStandard.json` |
+| **Full control (interactive)** | `./pcmr.sh --standard` |
 
 ## 🚨 **Critical Safety Features**
 
@@ -308,6 +320,10 @@ z13-tdp list
 - **Arch Linux Wiki**: Official documentation and troubleshooting
 - **ASUS ROG Community**: Hardware-specific tips and tricks
 
+### For AI Assistants / Coding Agents
+- Start with `Docs/Prompt.md` for the evolving project prompt, mental map, scope, and history.
+- Keep `README.md` and docs in sync with code changes.
+
 ### **Share Your Experience**
 - Post your setup on r/unixporn or r/archlinux
 - Share performance benchmarks with the community
@@ -326,4 +342,4 @@ z13-tdp list
 
 **Ready to install?** Boot from Arch USB and run: `./pcmr.sh --zen-kernel`
 
-**Want to contribute?** This project uses modern software engineering principles to create a maintainable, scalable installation system. Join us in making Arch Linux installation as smooth as possible for the Z13 Flow!
+**Want to contribute?** This project uses modern software engineering principles to create a maintainable, scalable installation system. See `Docs/Documentation.md` and `Docs/Modules/` for architecture, module specs, and user stories.

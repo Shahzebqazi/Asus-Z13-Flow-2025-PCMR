@@ -16,6 +16,22 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Global variables
+# Resolve the directory of this script robustly (works with sourced, exec'd, or piped runs)
+SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
+if [[ "$SCRIPT_PATH" == "-" || "$SCRIPT_PATH" == "bash" || "$SCRIPT_PATH" == "/dev/fd"* ]]; then
+    SCRIPT_DIR="$(pwd)"
+else
+    SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+fi
+
+# Always resolve modules relative to the script directory
+MODULES_DIR="$SCRIPT_DIR/Modules"
+# If stdin is not a TTY (e.g., running via curl | bash), reattach to the terminal so reads work
+if [[ ! -t 0 && -e /dev/tty ]]; then
+    exec </dev/tty
+fi
+
+# Global variables
 MODULES_DIR="$(dirname "$0")/Modules"
 INSTALLATION_STARTED=false
 BASE_SYSTEM_INSTALLED=false
@@ -637,6 +653,39 @@ For more information, see README.md
 EOF
 }
 
+# Self-bootstrap when Modules/Configs are missing (supports curl|bash usage)
+SelfBootstrapIfNeeded() {
+    # Prevent infinite recursion
+    if [[ -n "$PCMR_BOOTSTRAPPED" ]]; then
+        return 0
+    fi
+
+    local have_modules=false
+    if [[ -f "$MODULES_DIR/DiskManagement.sh" && -f "$SCRIPT_DIR/Configs/Zen.json" ]]; then
+        have_modules=true
+    fi
+
+    if [[ "$have_modules" == false ]]; then
+        PrintWarning "Required repo content not found. Downloading stable branch (modules, configs)..."
+        local tmp_dir
+        tmp_dir="$(mktemp -d -t pcmr.XXXXXX)" || HandleFatalError "Unable to create temp directory for bootstrap"
+        local tarball="$tmp_dir/repo.tar.gz"
+
+        if ! curl -fsSL "https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/archive/refs/heads/stable.tar.gz" -o "$tarball"; then
+            HandleFatalError "Failed to download stable repository tarball"
+        fi
+
+        if ! tar -xzf "$tarball" -C "$tmp_dir" --strip-components=1; then
+            HandleFatalError "Failed to extract repository tarball"
+        fi
+
+        export PCMR_BOOTSTRAPPED=1
+        cd "$tmp_dir" || HandleFatalError "Unable to change directory to bootstrap folder"
+        PrintStatus "Re-executing installer from downloaded repository..."
+        exec bash ./pcmr.sh "$@"
+    fi
+}
+
 # Function to parse JSON configuration files
 ParseJsonConfig() {
     local config_file="$1"
@@ -1228,6 +1277,9 @@ Main() {
         fi
     fi
     
+    # Ensure full repository content is available when run via curl|bash
+    SelfBootstrapIfNeeded "$@"
+
     # Load and execute installation modules
     LoadModule "DiskManagement"
     LoadModule "FilesystemSetup"

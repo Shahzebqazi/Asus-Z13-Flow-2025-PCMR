@@ -25,13 +25,13 @@ The ASUS ROG Flow Z13 (2025) with AMD Strix Halo is an incredible machine, but g
 
 **Get the installer (stable):**
 ```bash
-curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
+curl -fsSL https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash -s -- --zen-kernel
 ```
 
 ### **Automated Installation (Recommended)**
 ```bash
 # Boot from Arch Linux USB and run (stable branch):
-curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
+curl -fsSL https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash -s -- --zen-kernel
 ```
 
 ### **Using Configuration Files**

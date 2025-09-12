@@ -8,7 +8,42 @@ require_cmd() {
 }
 
 print_disks() {
-    lsblk -o NAME,SIZE,TYPE,MOUNTPOINT | sed 's/^/  /'
+    echo "NAME                                   SIZE  TYPE  FSTYPE  CLASS        MOUNTPOINT"
+    echo "-------------------------------------------------------------------------------------"
+    # Use lsblk key="val" pairs to reduce parsing ambiguity
+    lsblk -rp -o NAME,SIZE,TYPE,FSTYPE,PARTTYPE,MOUNTPOINT | while IFS= read -r line; do
+        # Fields are space-separated and safe with -p; extract with awk
+        name=$(echo "$line" | awk '{print $1}')
+        size=$(echo "$line" | awk '{print $2}')
+        type=$(echo "$line" | awk '{print $3}')
+        fstype=$(echo "$line" | awk '{print $4}')
+        parttype=$(echo "$line" | awk '{print $5}')
+        mnt=$(echo "$line" | awk '{print $6}')
+
+        class=""
+        pt=$(echo "$parttype" | tr '[:upper:]' '[:lower:]')
+        case "$pt" in
+            c12a7328-f81f-11d2-ba4b-00a0c93ec93b) class="EFI" ;;
+            e3c9e316-0b5c-4db8-817d-f92df00215ae) class="MSR" ;;
+            ebd0a0a2-b9e5-4433-87c0-68b6b72699c7) class="Windows-Data" ;;
+            0fc63daf-8483-4772-8e79-3d69d8477de4) class="Linux-Filesystem" ;;
+            0657fd6d-a4ab-43c4-84e5-0933c84b4f4f) class="Linux-Swap" ;;
+            21686148-6449-6e6f-744e-656564454649) class="BIOS-Boot" ;;
+            *) class="" ;;
+        esac
+
+        if [[ -z "$class" && "$type" == "part" ]]; then
+            case "$fstype" in
+                ntfs) class="Windows-NTFS" ;;
+                vfat|fat32|fat) class="EFI-or-FAT" ;;
+                ext4|btrfs|xfs) class="Linux-FS" ;;
+                swap) class="Linux-Swap" ;;
+                *) class="Unknown" ;;
+            esac
+        fi
+
+        printf "  %-38s %-5s %-5s %-7s %-12s %s\n" "$name" "$size" "$type" "${fstype:--}" "$class" "${mnt:-}"
+    done
 }
 
 select_install_type() {
@@ -37,8 +72,14 @@ select_install_type() {
 }
 
 select_disk() {
-    echo "Available disks:"
+    echo "Available disks (with partition classification):"
     print_disks
+    echo ""
+    if [[ "$DUAL_BOOT_MODE" == "new" ]]; then
+        echo "Target disk = physical drive that will be wiped and repartitioned for Arch."
+    else
+        echo "Target disk = physical drive containing Windows (we will preserve Windows and ESP)."
+    fi
     while true; do
         read -p "Enter target disk (e.g., /dev/nvme0n1): " DISK_DEVICE < "$TTY_INPUT" || true
         if [[ -b "$DISK_DEVICE" ]]; then

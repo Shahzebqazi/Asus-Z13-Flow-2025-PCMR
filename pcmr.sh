@@ -19,6 +19,9 @@ NC='\033[0m' # No Color
 MODULES_DIR="$(dirname "$0")/Modules"
 INSTALLATION_STARTED=false
 BASE_SYSTEM_INSTALLED=false
+STATE_HOST_FILE="/tmp/pcmr-installer.state"
+STATE_DIR="/mnt/var/lib/pcmr-installer"
+STATE_FILE="$STATE_DIR/state"
 
 # Default configuration
 DUAL_BOOT_MODE=""
@@ -143,6 +146,45 @@ PrintError() {
     else
         echo -e "${RED}[ERROR]${NC} $message"
     fi
+}
+
+# Simple resume state helpers
+ensure_state_dir() {
+    if mountpoint -q /mnt; then
+        mkdir -p "$STATE_DIR" || true
+        touch "$STATE_FILE" || true
+    fi
+    touch "$STATE_HOST_FILE" || true
+}
+
+mark_phase_done() {
+    local phase="$1"
+    ensure_state_dir
+    if [[ -n "$phase" ]]; then
+        grep -qx "$phase" "$STATE_HOST_FILE" 2>/dev/null || echo "$phase" >> "$STATE_HOST_FILE"
+        if [[ -f "$STATE_FILE" ]]; then
+            grep -qx "$phase" "$STATE_FILE" 2>/dev/null || echo "$phase" >> "$STATE_FILE"
+        fi
+    fi
+}
+
+is_phase_done() {
+    local phase="$1"
+    [[ -f "$STATE_HOST_FILE" && $(grep -x "$phase" "$STATE_HOST_FILE" 2>/dev/null | wc -l) -gt 0 ]] && return 0
+    [[ -f "$STATE_FILE" && $(grep -x "$phase" "$STATE_FILE" 2>/dev/null | wc -l) -gt 0 ]] && return 0
+    return 1
+}
+
+run_phase() {
+    local phase_name="$1"; shift
+    local func_name="$1"; shift
+    if is_phase_done "$phase_name"; then
+        PrintStatus "Skipping phase '$phase_name' (already completed)"
+        return 0
+    fi
+    PrintHeader "Running phase: $phase_name"
+    "$func_name" "$@"
+    mark_phase_done "$phase_name"
 }
 
 # Input validation functions
@@ -1153,34 +1195,33 @@ Main() {
         add_log_message "Filesystem: $FILESYSTEM | Desktop: $DESKTOP_ENVIRONMENT"
     fi
     
-    # Execute installation phases
-    disk_management_setup
-    filesystem_setup
-    CoreInstallation
+    # Execute installation phases with resume support
+    run_phase "disk" disk_management_setup
+    run_phase "fs" filesystem_setup
+    run_phase "base" CoreInstallation
     BASE_SYSTEM_INSTALLED=true
-    
     # Install bootloader before hardening
-    bootloader_setup
+    run_phase "bootloader" bootloader_setup
     
     # Load and run system configuration
     LoadModule "SystemConfiguration"
-    system_configuration
+    run_phase "syscfg" system_configuration
     
     # Load and run security hardening
     LoadModule "SecurityHardening"
-    security_hardening_setup
+    run_phase "hardening" security_hardening_setup
     
     # Load and run performance optimization
     LoadModule "PerformanceOptimization"
-    performance_optimization_setup
+    run_phase "performance" performance_optimization_setup
     
     # Load and run system monitoring
     LoadModule "SystemMonitoring"
-    system_monitoring_setup
+    run_phase "monitoring" system_monitoring_setup
     
     # Load and run backup and recovery system
     LoadModule "BackupRecovery"
-    backup_recovery_setup
+    run_phase "backup" backup_recovery_setup
     
     if [[ "$TUI_ENABLED" == true ]]; then
         add_log_message "🎉 Installation completed successfully!"

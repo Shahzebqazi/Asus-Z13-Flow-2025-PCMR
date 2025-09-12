@@ -36,24 +36,22 @@ This script combines wisdom from:
 curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
 ```
 
+- If you have a USB-C Ethernet dongle, keep it handy (in case Wi‑Fi is finicky on the installer).
+- We’ll handle Secure Boot during install; you can leave it off for the USB boot to avoid surprises.
+
 ### **Automated Installation (Recommended)**
 ```bash
 # Boot from Arch Linux USB and run (stable branch):
 curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
 ```
 
+During install, you'll be prompted to choose: Fresh install or Dual‑boot with Windows.
+
 ### **Using Configuration Files**
 Note: local configs require cloning the stable branch:
 `git clone -b stable https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR.git`
 ```bash
-# Download and run with Level1Techs config
-./pcmr.sh --config Configs/Level1Techs.json
-
-# Run with Zen kernel optimization
-./pcmr.sh --zen-kernel --config Configs/Zen.json
-
-# Dual-boot with existing Windows
-./pcmr.sh --dual-boot-gpt --zen-kernel
+./pcmr.sh --config Configs/Zen.json
 ```
 
 
@@ -65,19 +63,9 @@ Perfect for most users - uses optimal settings for Z13:
 ./pcmr.sh --zen-kernel
 ```
 
-### **⚙️ Customized Install (Pick ONE profile, no extra flags)**
+### **⚙️ Customized Install (single stable config)**
 ```bash
-# Fresh SSD, Zen kernel (recommended default)
-./pcmr.sh --config Configs/FreshZen.json
-
-# Fresh SSD, standard kernel
-./pcmr.sh --config Configs/FreshStandard.json
-
-# Dual-boot with Windows, Zen kernel
-./pcmr.sh --config Configs/DualBootZen.json
-
-# Dual-boot with Windows, standard kernel
-./pcmr.sh --config Configs/DualBootStandard.json
+./pcmr.sh --config Configs/Zen.json
 ```
 
 ### Secure Boot (optional)
@@ -103,17 +91,10 @@ Want full control? Use standard mode and answer prompts:
 
 | I Want... | Use This Profile |
 |-----------|------------------|
-| **Fresh install, best performance** | `Configs/FreshZen.json` |
-| **Fresh install, stable standard kernel** | `Configs/FreshStandard.json` |
-| **Keep Windows (dual-boot), best performance** | `Configs/DualBootZen.json` (Secure Boot off) |
-| **Keep Windows (dual-boot), standard kernel** | `Configs/DualBootStandard.json` (Secure Boot off) |
+| **Zen preset (general)** | `Configs/Zen.json` |
 | **Full control (interactive)** | `./pcmr.sh --standard` |
 
-### Learn more about each profile
-- Fresh Zen: see `Docs/Configs/FreshZen.md`
-- Fresh Standard: see `Docs/Configs/FreshStandard.md`
-- Dual-Boot Zen: see `Docs/Configs/DualBootZen.md`
-- Dual-Boot Standard: see `Docs/Configs/DualBootStandard.md`
+ 
 
 ## 🚨 **Critical Safety Features**
 
@@ -225,105 +206,7 @@ update      # system update with pacman
 
 ## 🔍 **Troubleshooting**
 
-### **Common Issues**
-
-**TUI not displaying properly:**
-```bash
-# Check terminal compatibility
-echo $TERM
-# Run without TUI
-./pcmr.sh --standard --no-tui
-```
-
-**Module dependency errors:**
-```bash
-# Check module status
-grep "MODULE_STATUS" /tmp/installation.log
-# Verify dependencies
-./Modules/CoreInstallation.sh --check-deps
-```
-
-**WiFi instability on Z13:**
-```bash
-# Check MediaTek driver config
-cat /etc/modprobe.d/mt7925e.conf
-# Should contain: options mt7925e disable_aspm=1
-```
-
-**Oh My Posh not displaying correctly:**
-```bash
-# Check if Oh My Posh is installed
-which oh-my-posh
-
-# Verify Nerd Font is installed
-fc-list | grep -i jetbrains
-
-# Test theme manually
-oh-my-posh init zsh --config ~/.config/oh-my-posh/zen.omp.json
-```
-
-**Zsh not default shell:**
-```bash
-# Check current shell
-echo $SHELL
-
-# Change to zsh if needed
-chsh -s /bin/zsh
-```
-
-**External monitor lid-close not working:**
-```bash
-# Check if external monitor detection is working
-/usr/local/bin/z13-monitor-setup.sh
-
-# Manually check connected displays
-xrandr --query | grep " connected"
-
-# Check lid switch configuration
-cat /etc/systemd/logind.conf.d/z13-lid.conf
-```
-
-**180Hz display not working:**
-```bash
-# Check available display modes
-xrandr --verbose
-
-# Test 180Hz mode manually
-xrandr --output eDP-1 --mode 1920x1200 --rate 180
-
-# Verify VRR support
-cat /sys/class/drm/card*/device/pp_features
-```
-
-**TDP management not working:**
-```bash
-# Check if dynamic TDP service is running
-systemctl status z13-dynamic-tdp.service
-
-# Check current TDP status
-z13-tdp status
-
-# View TDP change log
-tail -f /var/log/z13-tdp.log
-
-# Manually test ryzenadj
-sudo ryzenadj --info
-
-# Restart TDP service
-sudo systemctl restart z13-dynamic-tdp.service
-```
-
-**Custom TDP profiles not saving:**
-```bash
-# Check profile directory permissions
-ls -la /etc/z13/
-
-# Manually create profile
-sudo z13-tdp create test_profile 60 15 "Test profile"
-
-# List all profiles
-z13-tdp list
-```
+See `Docs/Troubleshooting Guide.md` for the consolidated troubleshooting guide with detailed commands for Wi‑Fi, display, audio, TDP, GRUB/Secure Boot, and installer issues.
 
 ## 🤝 **Community & Support**
 
@@ -337,6 +220,8 @@ z13-tdp list
 - Start with `Docs/Prompt.md` for the evolving project prompt, mental map, scope, and history.
 - Keep `README.md` and docs in sync with code changes.
 
+- Kickoff: Read `README.md`, then `Docs/Prompt.md`. For implementation, work on `development` (or `stable` for installer tweaks). Keep docs/code in sync.
+
 ### **Share Your Experience**
 - Post your setup on r/unixporn or r/archlinux
 - Share performance benchmarks with the community
@@ -346,7 +231,6 @@ z13-tdp list
 ## 🧭 **Documentation Map**
 
 - User Guide: `Docs/User Guide.md`
-- Troubleshooting: `Docs/Troubleshooting Guide.md`
 - Agent prompt and project mental map: `Docs/Prompt.md`
 - Module specs and scripts: `Docs/Modules/`
 - Config profiles: `Configs/*.json`

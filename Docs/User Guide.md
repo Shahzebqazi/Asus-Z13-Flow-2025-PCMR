@@ -1,6 +1,6 @@
 # User Guide — Arch Linux on ASUS ROG Flow Z13 (2025)
 
-This guide is for Z13 Flow (2025) with AMD Ryzen Strix Halo. It focuses on the fastest, safest path with minimal choices.
+This guide is for Z13 Flow (2025) with AMD Ryzen Strix Halo. It focuses on the fastest, safest path with minimal choices. Developer/agent details live in `Docs/Prompt.md`.
 
 ## Quick Start (Recommended)
 
@@ -11,29 +11,20 @@ This guide is for Z13 Flow (2025) with AMD Ryzen Strix Halo. It focuses on the f
 curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
 ```
 
+- If you have a USB-C Ethernet dongle, keep it handy (in case Wi‑Fi is finicky on the installer).
+- We’ll handle Secure Boot during install; you can leave it off for the USB boot to avoid surprises.
+
 - Uses the Zen kernel and optimizations for the Z13.
 - Desktop is enforced to `omarchy`.
 - Secure Boot: enabled automatically only for fresh/Linux-only installs; auto-disabled for existing Windows dual-boot (uses GRUB).
 
-## Choose a Profile (one option)
+## Optional: Single stable config
 
-If you prefer explicit configs instead of defaults, pick one profile and run it. Do not mix flags.
+If you prefer an explicit config instead of defaults:
 
 ```bash
-# Fresh SSD, Zen kernel (recommended default)
-./pcmr.sh --config Configs/FreshZen.json
-
-# Fresh SSD, standard kernel
-./pcmr.sh --config Configs/FreshStandard.json
-
-# Keep Windows (dual-boot), Zen kernel
-./pcmr.sh --config Configs/DualBootZen.json
-
-# Keep Windows (dual-boot), standard kernel
-./pcmr.sh --config Configs/DualBootStandard.json
+./pcmr.sh --config Configs/Zen.json
 ```
-
-Learn more: `Docs/Configs/FreshZen.md`, `Docs/Configs/FreshStandard.md`, `Docs/Configs/DualBootZen.md`, `Docs/Configs/DualBootStandard.md`.
 
 ## Dual‑Boot Prep on Windows (Recommended)
 
@@ -54,11 +45,12 @@ Reference: Arch Wiki guidance on Windows ESP sizing.
 ## Steps (5–7 minutes of interaction)
 
 1) Boot the Arch ISO (UEFI). Ensure internet connectivity.
-2) Pick either Quick Start or a single config profile from above.
-3) The installer validates prerequisites and shows a summary. Press Enter to continue.
-4) Enter passwords when prompted (root and your user).
-5) Installation runs through modules automatically; progress is shown in a compact TUI.
-6) On success, remove the USB and reboot.
+2) Pick either Quick Start or the single config from above.
+3) Choose install type when prompted: Fresh install or Dual‑boot with Windows.
+4) The installer validates prerequisites and shows a summary. Press Enter to continue.
+5) Enter passwords when prompted (root and your user).
+6) Installation runs through modules automatically; progress is shown in a compact TUI.
+7) On success, remove the USB and reboot.
 
 ## After Reboot
 
@@ -81,31 +73,11 @@ tdp-list     # Show available profiles (built-in + custom)
 tdp          # Manage profiles
 ```
 
-## Troubleshooting (short)
+## Troubleshooting
 
-- TUI not displaying properly:
-```bash
-./pcmr.sh --standard --no-tui
-```
+For all troubleshooting, see the consolidated guide:
 
-- Wi‑Fi unstable (MediaTek MT7925e):
-```bash
-cat /etc/modprobe.d/mt7925e.conf
-# Expect: options mt7925e disable_aspm=1
-```
-
-- TDP service:
-```bash
-systemctl status z13-dynamic-tdp.service
-sudo systemctl restart z13-dynamic-tdp.service
-```
-
-- Dual‑boot: Windows missing in menu (GRUB):
-```bash
-sudo grub-mkconfig -o /boot/grub/grub.cfg
-```
-
-More issues? See the extended sections below.
+- `Docs/Troubleshooting Guide.md`
 
 ## Secure Boot Policy (summary)
 
@@ -116,45 +88,7 @@ For developer notes, see `Docs/Prompt.md`.
 
 ## Extended Troubleshooting
 
-### Installation stops or errors mid-run
-```bash
-# Tail the live installer log
-tail -f /tmp/pcmr-install.log
-
-# Check disk and memory
-df -h
-free -h
-```
-Common fixes:
-- Update package metadata: `pacman -Syyu`
-- Clear pacman cache: `pacman -Scc`
-- Restart network: `systemctl restart NetworkManager`
-
-### Wi‑Fi instability (MT7925e)
-```bash
-cat /etc/modprobe.d/mt7925e.conf
-echo "options mt7925e disable_aspm=1" | sudo tee /etc/modprobe.d/mt7925e.conf
-sudo modprobe -r mt7925e && sudo modprobe mt7925e
-```
-
-### Display refresh/VRR
-```bash
-xrandr --verbose
-xrandr --output eDP-1 --mode 1920x1200 --rate 180
-```
-
-### Audio not working
-```bash
-systemctl --user restart pipewire pipewire-pulse
-alsamixer
-```
-
-### Battery life/sleep
-```bash
-z13-tdp efficient
-powertop --auto-tune
-sudo tlp-stat -b
-```
+See `Docs/Troubleshooting Guide.md` for detailed commands and fixes.
 
 ## Advanced Configuration (essentials)
 
@@ -189,37 +123,4 @@ cp Configs/Zen.json Configs/MyCustom.json
 
 For deep dives (kernel params, module tuning, services, advanced security), see the project’s developer docs (`Docs/Prompt.md` for agents) or open an issue to request coverage in the user guide.
 
-
-### Custom TDP Profiles (optional)
-
-```bash
-# Create a custom profile (AC_Watts BATTERY_Watts "Description")
-sudo z13-tdp create dev_profile 35 20 "Development workload"
-
-# List and use profiles
-z13-tdp list
-z13-tdp dev_profile
-```
-
-JSON-based configs can set defaults too:
-```json
-{ "power": { "default_tdp_profile": "balanced" } }
-```
-
-### Performance tuning (quick actions)
-
-```bash
-# Switch CPU governor (performance | ondemand | powersave)
-echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor >/dev/null
-
-# AMD P-State Energy Performance Preference (performance | balance_performance | balance_power | power)
-for f in /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference; do echo balance_performance | sudo tee "$f" >/dev/null; done
-
-# Quick TDP changes
-z13-tdp gaming     # maximize performance (thermal limits apply)
-z13-tdp balanced   # recommended default
-z13-tdp efficient  # maximize battery life
-```
-
-Note: Advanced tuning can reduce stability or battery life. If unsure, return to balanced defaults.
 

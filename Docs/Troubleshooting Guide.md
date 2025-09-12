@@ -1,13 +1,14 @@
 # Z13 Troubleshooting (Consolidated)
 
-This content now lives in the unified `Docs/User Guide.md` under “Troubleshooting (short)” and “Extended Troubleshooting”.
+This is the canonical troubleshooting reference for the Z13 installer and system. The user guide now links here for detailed commands and recipes.
 
 Start here:
 
-- `Docs/User Guide.md` → Troubleshooting (short)
-- `Docs/User Guide.md` → Extended Troubleshooting
+- Common symptoms and quick checks are summarized below
+- For installation problems, see Installation Issues
+- For hardware problems, see Hardware-Specific Issues
 
-If something is missing, open an issue to add it to the user guide.
+If something is missing, open an issue to add it here.
 
 ## (Deprecated sections below)
 

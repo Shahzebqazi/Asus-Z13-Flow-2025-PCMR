@@ -13,7 +13,7 @@ CoreInstallation() {
     local kernel_pkg="linux-zen"
     if [[ "$USE_ZEN_KERNEL" != true ]]; then kernel_pkg="linux"; fi
 
-    pacstrap /mnt base $kernel_pkg linux-firmware networkmanager zsh sudo vim || HandleFatalError "pacstrap failed"
+    pacstrap /mnt base $kernel_pkg linux-firmware amd-ucode networkmanager zsh sudo vim || HandleFatalError "pacstrap failed"
 
     genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -30,7 +30,7 @@ CoreInstallation() {
     fi
 
     # Enable NetworkManager
-    arch-chroot /mnt systemctl enable NetworkManager
+    arch-chroot /mnt systemctl enable NetworkManager || true
 
     # Create user
     local user="${USERNAME:-archuser}"

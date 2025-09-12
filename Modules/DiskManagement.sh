@@ -65,7 +65,7 @@ prepare_partitions() {
         partprobe "$DISK_DEVICE"
         sleep 1
         sgdisk -n 1:0:+300M -t 1:EF00 -c 1:"EFI System" "$DISK_DEVICE"
-        sgdisk -n 2:0:-8G   -t 2:8304 -c 2:"Linux Root" "$DISK_DEVICE"
+        sgdisk -n 2:0:-8G   -t 2:8300 -c 2:"Linux Root" "$DISK_DEVICE"
         sgdisk -n 3:0:0     -t 3:8200 -c 3:"Linux Swap" "$DISK_DEVICE"
         partprobe "$DISK_DEVICE"
         sleep 1
@@ -96,6 +96,7 @@ format_partitions() {
     else
         PrintStatus "Preserving existing EFI System Partition at $EFI_PART"
     fi
+    PrintStatus "Stable policy: using ext4 for root filesystem"
     mkfs.ext4 -F "$ROOT_PART"
     if [[ -n "$SWAP_PART" ]]; then mkswap "$SWAP_PART" ; fi
 }

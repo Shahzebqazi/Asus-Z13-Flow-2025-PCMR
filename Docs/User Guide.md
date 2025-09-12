@@ -13,7 +13,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.s
 
 - Uses the Zen kernel and optimizations for the Z13.
 - Desktop is enforced to `omarchy`.
-- Secure Boot: enabled automatically only for fresh/Linux-only installs; auto-disabled for existing Windows dual-boot (uses GRUB).
+- Secure Boot: signing deferred on stable; fresh uses systemd-boot unsigned; dual-boot disables Secure Boot and uses GRUB.
 
 ## Choose a Profile (optional)
 
@@ -82,7 +82,7 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 ## Secure Boot Policy (summary)
 
-- Fresh/Linux‑only installs: systemd‑boot + `sbctl` with key creation and signing.
+- Fresh/Linux‑only installs: systemd‑boot, unsigned on stable (signing deferred).
 - Existing Windows dual‑boot: GRUB UEFI with `os-prober`; Secure Boot disabled to preserve Windows boot.
 
 For developer notes, see `Docs/Prompt.md`.

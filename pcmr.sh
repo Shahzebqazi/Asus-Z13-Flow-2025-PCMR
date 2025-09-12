@@ -26,14 +26,14 @@ STATE_FILE="$STATE_DIR/state"
 # Default configuration
 DUAL_BOOT_MODE=""
 USE_ZEN_KERNEL=false
-FILESYSTEM="zfs"
+FILESYSTEM="ext4"
 DESKTOP_ENVIRONMENT="omarchy"
 INSTALL_GAMING=false
 INSTALL_POWER_MGMT=true
 ENABLE_HARDWARE_FIXES=true
 ENABLE_ERROR_RECOVERY=true
 ENABLE_FILESYSTEM_FALLBACK=true
-ENABLE_SNAPSHOTS=true
+ENABLE_SNAPSHOTS=false
 ENABLE_SECURE_BOOT=false
 
 # CLI flags
@@ -77,10 +77,10 @@ ENABLE_FRESH_REINSTALL=true
 ENABLE_DETACHED_MODE=true
 MAX_RETRY_ATTEMPTS=3
 CLEANUP_TIMEOUT=30
-ENABLE_SECURITY_HARDENING=true
-ENABLE_PERFORMANCE_OPTIMIZATION=true
-ENABLE_SYSTEM_MONITORING=true
-ENABLE_BACKUP_RECOVERY=true
+ENABLE_SECURITY_HARDENING=false
+ENABLE_PERFORMANCE_OPTIMIZATION=false
+ENABLE_SYSTEM_MONITORING=false
+ENABLE_BACKUP_RECOVERY=false
 
 # Installation state tracking
 INSTALLATION_PHASE=""
@@ -617,10 +617,9 @@ DUAL BOOT MODES:
     --dual-boot-gpt        For existing Windows UEFI installations
     --dual-boot-new        For fresh dual boot installations
 
-FILESYSTEMS:
-    ZFS (default)          Advanced features, snapshots, compression
-    Btrfs (fallback)       Modern features, snapshots
-    ext4 (fallback)        Stable, compatible
+FILESYSTEMS (stable policy):
+    ext4 (effective)       Stable, compatible, used on stable
+    zfs/btrfs (requested)  Auto-fallback to ext4 on stable
 
 FEATURES:
     - AMD Strix Halo AI Max+ optimization
@@ -632,7 +631,7 @@ FEATURES:
     - Power profiles (Efficient, AI, Gaming)
     - Hardware-specific fixes
     - Comprehensive error handling
-    - Secure Boot (optional in fresh/Linux-only installs)
+    - Secure Boot (signing deferred on stable; fresh uses systemd-boot unsigned; dual-boot uses GRUB without SB)
 
 For more information, see README.md
 EOF
@@ -662,7 +661,7 @@ ParseJsonConfig() {
     FILESYSTEM=$(echo "$json_content" | grep -o '"default_filesystem"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_filesystem"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
     DESKTOP_ENVIRONMENT=$(echo "$json_content" | grep -o '"default_desktop"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_desktop"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
     INSTALL_GAMING=$(echo "$json_content" | grep -o '"enable_gaming"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
-    ENABLE_SNAPSHOTS=$(echo "$json_content" | grep -o '"enable_snapshots"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    ENABLE_SNAPSHOTS=false
     
     # Parse power management
     INSTALL_POWER_MGMT=$(echo "$json_content" | grep -o '"enable_power_management"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
@@ -681,7 +680,7 @@ ParseJsonConfig() {
     USERNAME=${USERNAME:-$DEFAULT_USERNAME}
     HOSTNAME=${HOSTNAME:-$DEFAULT_HOSTNAME}
     TIMEZONE=${TIMEZONE:-$DEFAULT_TIMEZONE}
-    FILESYSTEM=${FILESYSTEM:-"zfs"}
+    FILESYSTEM="ext4"
     # Enforce omarchy desktop regardless of config
     DESKTOP_ENVIRONMENT="omarchy"
 }
@@ -1005,6 +1004,12 @@ EnableDetachedMode() {
     PrintStatus "To check progress, use: tail -f /tmp/pcmr-install.log"
     echo ""
     
+    # Ensure 'screen' is available
+    if ! command -v screen >/dev/null 2>&1; then
+        PrintWarning "Detached mode requires 'screen', which is not available in this environment. Skipping detach."
+        return 1
+    fi
+
     # Start screen session for detached mode
     screen -dmS pcmr-install bash -c "
         # Redirect all output to log file

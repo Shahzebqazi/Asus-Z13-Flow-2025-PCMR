@@ -10,6 +10,17 @@ bootloader_setup() {
         pacstrap /mnt grub efibootmgr os-prober || HandleFatalError "Failed to install GRUB"
         arch-chroot /mnt os-prober || true
         arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch || HandleFatalError "grub-install failed"
+        # Ensure os-prober is enabled for GRUB
+        if [[ -f /mnt/etc/default/grub ]]; then
+            if grep -q '^GRUB_DISABLE_OS_PROBER=' /mnt/etc/default/grub; then
+                sed -i 's/^GRUB_DISABLE_OS_PROBER=.*/GRUB_DISABLE_OS_PROBER=false/' /mnt/etc/default/grub || true
+            else
+                echo 'GRUB_DISABLE_OS_PROBER=false' >> /mnt/etc/default/grub
+            fi
+        else
+            mkdir -p /mnt/etc/default
+            echo 'GRUB_DISABLE_OS_PROBER=false' > /mnt/etc/default/grub
+        fi
         arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg || HandleFatalError "grub-mkconfig failed"
     else
         PrintStatus "Installing systemd-boot"
@@ -46,6 +57,7 @@ EOF
         cat > "/mnt/boot/loader/entries/${entry_id}.conf" <<EOF
 title $entry_title
 linux /vmlinuz-$kernel_name
+initrd /amd-ucode.img
 initrd /initramfs-$kernel_name.img
 options root=PARTUUID=$root_uuid rw
 EOF

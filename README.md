@@ -59,18 +59,8 @@ Perfect for most users - uses optimal settings for Z13:
 ./pcmr.sh --config Configs/Zen.json
 ```
 
-### Secure Boot (optional)
-This installer supports Secure Boot using systemd-boot + sbctl when enabled in your config. For compatibility, Secure Boot is only applied for fresh or Linux-only installs; dual-boot with existing Windows will automatically use GRUB without Secure Boot:
-```json
-{
-  "installation": {
-    "enable_secure_boot": true
-  }
-}
-```
-Notes:
-- Keys are created and enrolled via sbctl; kernel and bootloader are signed.
-- Dual-boot (existing Windows): GRUB is used; keep Secure Boot disabled to avoid breaking Windows boot.
+### Secure Boot (stable policy)
+On stable, Secure Boot signing is deferred. Fresh/Linux-only installs use systemd-boot unsigned; dual-boot with existing Windows uses GRUB with Secure Boot disabled to preserve Windows boot.
 
 ### **🎛️ Manual Configuration**
 Want full control? Use standard mode and answer prompts:
@@ -120,7 +110,7 @@ Your ASUS ROG Flow Z13 (2025) isn't just another laptop - it's a technological m
 - **Steam Integration**: Steam and Proton work but with thermal limitations
 - **Performance Reality**: Gaming performance varies significantly due to thermal design
 
-### **📊 **Real-World Performance Expectations**
+### **Real-World Performance Expectations**
 
 | Use Case | Power Mode | Battery Life | Performance |
 |----------|------------|--------------|-------------|
@@ -144,13 +134,8 @@ This script includes hardware-specific optimizations that differentiate it from 
 - **Tablet Mode Detection**: Basic convertible form factor support (limited in some DEs)
 - **USB-C Power Delivery**: Optimized charging behavior
 
-**⚡ Advanced TDP Management System**
-- **System-Wide Dynamic TDP**: Automatic adjustment based on power source and battery level
-- **Custom Profile Creation**: Create and manage your own TDP profiles with `z13-tdp`
-- **AC Power Profiles**: 15W-120W range with user-selectable profiles
-- **Smart Battery TDP**: Dynamic 7W-25W scaling based on battery percentage
-- **Real-Time Adaptation**: System monitors and adjusts every 30 seconds
-- **Battery Care**: 40-80% charging limits for longevity
+**Power Profiles**
+- Recommended use of `asusctl`/system profiles; development-only dynamic TDP utilities are not part of stable.
 
 ### **🐚 Modern Terminal Experience**
 
@@ -171,24 +156,8 @@ Your Z13 comes with a beautiful, modern shell setup:
 - Full icon support for modern terminal applications
 - Perfect for both coding and system administration
 
-**🚀 Ready-to-Use TDP & Power Aliases**
-```bash
-# Dynamic TDP Management (Z13 Flow specific!)
-gaming       # AC: 120W, Battery: Dynamic (thermal limits apply)
-performance  # AC: 85W,  Battery: Dynamic (sustainable performance)
-balanced     # AC: 45W,  Battery: Dynamic (recommended for most use)
-efficient    # AC: 15W,  Battery: Dynamic (maximum battery life)
-
-# TDP Utilities
-tdp-status   # Show current power source, battery %, and TDP
-tdp-list     # List all available profiles (built-in + custom)
-tdp          # Main TDP management command
-
-# Development shortcuts
-gs          # git status
-ll          # detailed file listing
-update      # system update with pacman
-```
+**Power tips (stable)**
+- Use `asusctl` for profiles where available; avoid development utilities.
 
 **🔋 System-Wide Dynamic TDP Features**
 - **Automatic Battery Adjustment**: TDP dynamically scales 7W-25W based on battery level
@@ -268,23 +237,7 @@ xrandr --output eDP-1 --mode 2560x1600 --rate 180
 cat /sys/class/drm/card*/device/pp_features
 ```
 
-**TDP management not working:**
-```bash
-# Check if dynamic TDP service is running
-systemctl status z13-dynamic-tdp.service
-
-# Check current TDP status
-z13-tdp status
-
-# View TDP change log
-tail -f /var/log/z13-tdp.log
-
-# Manually test ryzenadj
-sudo ryzenadj --info
-
-# Restart TDP service
-sudo systemctl restart z13-dynamic-tdp.service
-```
+**Power/TDP management:** Development-only dynamic TDP services are not part of stable.
 
 **Custom TDP profiles not saving:**
 ```bash
@@ -307,8 +260,7 @@ z13-tdp list
 - **ASUS ROG Community**: Hardware-specific tips and tricks
 
 ### For AI Assistants / Coding Agents
-- Start with `Docs/Prompt.md` for the evolving project prompt, mental map, scope, and history.
-- Keep `README.md` and docs in sync with code changes.
+- See `Docs/Prompt.md` for project context. Keep README and docs aligned.
 
 ### **Share Your Experience**
 - Post your setup on r/unixporn or r/archlinux

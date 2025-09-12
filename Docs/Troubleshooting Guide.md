@@ -201,28 +201,8 @@ Start here:
 
 If something is missing, open an issue to add it here.
 
-## (Deprecated sections below)
-
-### Emergency Quick Reference
-```bash
-# System won't boot
-z13-recovery emergency
-
-# High temperature emergency
-z13-tdp efficient
-systemctl stop cpu-intensive-service
-
-# Out of disk space
-z13-backup-manager cleanup
-z13-zfs-snapshot cleanup  # or z13-btrfs-snapshot cleanup
-
-# Network completely down
-z13-recovery network
-systemctl restart NetworkManager
-
-# System completely unresponsive
-# Hard reset: Hold power button for 10 seconds
-```
+## (Deprecated sections below — removed on stable)
+The following subsections referenced development-only tools and have been removed from stable documentation: emergency z13 utilities, backup/snapshot managers, and comprehensive monitoring wrappers. Use the canonical fixes above and standard Arch tools.
 
 ## 🔧 Installation Issues
 
@@ -601,30 +581,8 @@ cat /proc/acpi/wakeup
    cat /sys/power/wake_lock
    ```
 
-### Issue: TDP Management Not Working
-**Symptoms:** TDP commands fail, power profiles don't change
-
-**Diagnosis:**
-```bash
-# Check TDP service
-systemctl status z13-dynamic-tdp.service
-z13-tdp status
-
-# Check ryzenadj
-sudo ryzenadj --info
-```
-
-**Solutions:**
-```bash
-# Restart TDP service
-sudo systemctl restart z13-dynamic-tdp.service
-
-# Check permissions
-ls -la /usr/local/bin/z13-tdp
-
-# Manual TDP setting
-sudo ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000
-```
+### Issue: TDP Management Not Working (stable)
+Use vendor tools available via `asusctl` and system power profiles. Dynamic TDP daemons and `z13-tdp` are not part of stable. For manual tuning, refer to Arch Wiki and AMD P-State documentation.
 
 ## 🌐 Network Issues
 
@@ -840,29 +798,23 @@ ssh-keygen -R <hostname>
 
 ## 📊 Monitoring and Diagnostics
 
-### Comprehensive System Check
+### Comprehensive System Check (stable)
+Use standard tools for diagnostics:
 ```bash
-# Run complete system health check
-z13-health-monitor check
-
-# Generate system report
-z13-monitoring-status
-
-# Check all logs
-z13-recovery logs
+journalctl -xe | tail -200 | cat
+sudo dmesg | tail -200 | cat
+systemctl --failed
+top -o %CPU | head -20
+free -h
+df -h
 ```
 
-### Performance Analysis
+### Performance Analysis (stable)
 ```bash
-# Generate performance report
-z13-performance-monitor analyze
-
-# Check resource usage
-z13-performance-monitor status
-
-# Hardware diagnostics
-z13-recovery hardware
-```
+htop
+powertop --auto-tune
+sudo sensors
+``` 
 
 ## 🆘 Getting Help
 
@@ -883,18 +835,12 @@ dmesg | tail -50
 
 ### Information to Gather
 ```bash
-# System information
 uname -a
 lscpu
-lspci
+lspci -nnk
 lsusb
 free -h
 df -h
-
-# Z13-specific information
-z13-recovery hardware
-z13-health-monitor status
-z13-tdp status
 ```
 
 ### Community Resources

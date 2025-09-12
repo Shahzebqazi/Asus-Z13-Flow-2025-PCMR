@@ -607,14 +607,11 @@ EXAMPLES:
     $0 --config Configs/Zen.json
     $0 --standard
     $0 --dual-boot-gpt --zen-kernel
-    $0 --dual-boot-new
 
 CONFIGURATION:
     The script can load configuration from a file.
     Available configurations:
-    - Configs/Zen.json: Performance gaming setup
-    - Configs/Level1Techs.json: Level1Techs-inspired stable setup
-    - Configs/QuickStart.json: Minimal setup
+    - Configs/Zen.json: Performance gaming setup (stable default)
 
 DUAL BOOT MODES:
     --dual-boot-gpt        For existing Windows UEFI installations
@@ -635,7 +632,7 @@ FEATURES:
     - Power profiles (Efficient, AI, Gaming)
     - Hardware-specific fixes
     - Comprehensive error handling
-    - Secure Boot (optional via config: enable_secure_boot=true; systemd-boot + sbctl)
+    - Secure Boot (optional in fresh/Linux-only installs)
 
 For more information, see README.md
 EOF
@@ -966,20 +963,14 @@ RestartInstallation() {
     
     if [[ "$change_config" =~ ^[Yy] ]]; then
         echo "Available configurations:"
-        echo "1) FreshZen.json (Fresh install, Zen kernel)"
-        echo "2) FreshStandard.json (Fresh install, standard kernel)"
-        echo "3) DualBootZen.json (Dual-boot with Windows, Zen kernel)"
-        echo "4) DualBootStandard.json (Dual-boot with Windows, standard kernel)"
-        echo "5) Keep current configuration"
+        echo "1) Zen.json (stable default)"
+        echo "2) Keep current configuration"
         
-        read -p "Choose configuration (1-5): " config_choice
+        read -p "Choose configuration (1-2): " config_choice
         
         case "$config_choice" in
-            1) LoadConfig "$(dirname "$0")/Configs/FreshZen.json" ;;
-            2) LoadConfig "$(dirname "$0")/Configs/FreshStandard.json" ;;
-            3) LoadConfig "$(dirname "$0")/Configs/DualBootZen.json" ;;
-            4) LoadConfig "$(dirname "$0")/Configs/DualBootStandard.json" ;;
-            5) PrintStatus "Keeping current configuration" ;;
+            1) LoadConfig "$(dirname "$0")/Configs/Zen.json" ;;
+            2) PrintStatus "Keeping current configuration" ;;
             *) PrintWarning "Invalid choice, keeping current configuration" ;;
         esac
     fi

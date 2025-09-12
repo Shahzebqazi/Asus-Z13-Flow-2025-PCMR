@@ -1,0 +1,114 @@
+#!/bin/bash
+
+# Core Disk Management for stable branch
+# Sets up disk variables and prompts for Fresh vs Dual-boot
+
+require_cmd() {
+    command -v "$1" >/dev/null 2>&1 || { echo "Missing required command: $1"; exit 1; }
+}
+
+print_disks() {
+    lsblk -o NAME,SIZE,TYPE,MOUNTPOINT | sed 's/^/  /'
+}
+
+select_install_type() {
+    echo "Select installation type:"
+    echo "  1) Fresh install (use entire disk)"
+    echo "  2) Dual-boot with Windows (preserve existing Windows)"
+    local choice
+    while true; do
+        read -p "Enter choice (1-2): " choice
+        case "$choice" in
+            1)
+                DUAL_BOOT_MODE="new"
+                break
+                ;;
+            2)
+                DUAL_BOOT_MODE="gpt"
+                break
+                ;;
+            *) echo "Invalid choice" ;;
+        esac
+    done
+}
+
+select_disk() {
+    echo "Available disks:"
+    print_disks
+    while true; do
+        read -p "Enter target disk (e.g., /dev/nvme0n1): " DISK_DEVICE
+        if [[ -b "$DISK_DEVICE" ]]; then
+            break
+        else
+            echo "Not a valid block device."
+        fi
+    done
+}
+
+confirm_destructive_action() {
+    echo "WARNING: This will modify disk partitions on $DISK_DEVICE."
+    read -p "Type 'YES' to continue: " confirm
+    [[ "$confirm" == "YES" ]] || HandleFatalError "User aborted at disk confirmation"
+}
+
+prepare_partitions() {
+    if [[ "$DUAL_BOOT_MODE" == "new" ]]; then
+        PrintStatus "Partitioning disk for fresh install"
+        require_cmd sgdisk
+        require_cmd partprobe
+        # Wipe and create GPT with ESP + root + swap
+        sgdisk --zap-all "$DISK_DEVICE"
+        partprobe "$DISK_DEVICE"
+        sleep 1
+        sgdisk -n 1:0:+300M -t 1:EF00 -c 1:"EFI System" "$DISK_DEVICE"
+        sgdisk -n 2:0:-8G   -t 2:8304 -c 2:"Linux Root" "$DISK_DEVICE"
+        sgdisk -n 3:0:0     -t 3:8200 -c 3:"Linux Swap" "$DISK_DEVICE"
+        partprobe "$DISK_DEVICE"
+        sleep 1
+        EFI_PART="${DISK_DEVICE}p1"; ROOT_PART="${DISK_DEVICE}p2"; SWAP_PART="${DISK_DEVICE}p3"
+        [[ -e "$EFI_PART" ]] || EFI_PART="${DISK_DEVICE}1"
+        [[ -e "$ROOT_PART" ]] || ROOT_PART="${DISK_DEVICE}2"
+        [[ -e "$SWAP_PART" ]] || SWAP_PART="${DISK_DEVICE}3"
+    else
+        PrintStatus "Setting up for dual-boot (GPT)"
+        # Detect ESP and pick/create root partition interactively
+        EFI_PART=$(lsblk -rno NAME,PARTTYPE "/dev/$(basename "$DISK_DEVICE")" | awk '/c12a7328-f81f-11d2-ba4b-00a0c93ec93b/{print $1; exit}')
+        if [[ -n "$EFI_PART" ]]; then EFI_PART="/dev/$EFI_PART"; fi
+        if [[ -z "$EFI_PART" ]]; then HandleFatalError "No EFI partition found. Prepare Windows ESP first."; fi
+        echo "Existing partitions on $DISK_DEVICE:"; print_disks
+        while true; do
+            read -p "Enter Linux root partition (e.g., /dev/nvme0n1p5): " ROOT_PART
+            [[ -b "$ROOT_PART" ]] && break || echo "Invalid partition"
+        done
+        read -p "Enter swap partition (optional, blank to skip): " SWAP_PART
+        [[ -n "$SWAP_PART" && ! -b "$SWAP_PART" ]] && HandleValidationError "Invalid swap partition"
+    fi
+}
+
+format_partitions() {
+    PrintStatus "Formatting partitions"
+    mkfs.fat -F32 "$EFI_PART"
+    mkfs.ext4 -F "$ROOT_PART"
+    if [[ -n "$SWAP_PART" ]]; then mkswap "$SWAP_PART" ; fi
+}
+
+mount_partitions() {
+    PrintStatus "Mounting partitions"
+    mount "$ROOT_PART" /mnt
+    mkdir -p /mnt/boot
+    mount "$EFI_PART" /mnt/boot
+    if [[ -n "$SWAP_PART" ]]; then swapon "$SWAP_PART" ; fi
+}
+
+# Entry called by main script
+DiskManagement_setup() {
+    select_install_type
+    select_disk
+    confirm_destructive_action
+    prepare_partitions
+    format_partitions
+    mount_partitions
+}
+
+# Backward-compatible lowercase name if main uses that
+ disk_management_setup() { DiskManagement_setup "$@"; }

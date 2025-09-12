@@ -145,7 +145,9 @@ function Ensure-LargeEsp {
     if (-not $letter) {
         $letter = (Get-Partition -DiskNumber $Disk.Number -PartitionNumber $newEsp.PartitionNumber | Get-Volume -ErrorAction SilentlyContinue).DriveLetter
         if (-not $letter) {
-            $letter = (Get-Partition -DiskNumber $Disk.Number -PartitionNumber $newEsp.PartitionNumber | Set-Partition -NewDriveLetter (Get-ChildItem Function: | Measure-Object).Count | Out-Null; (Get-Volume -Partition $newEsp).DriveLetter)
+            $tmpLtr = 'S'
+            Set-Partition -DiskNumber $Disk.Number -PartitionNumber $newEsp.PartitionNumber -NewDriveLetter $tmpLtr -ErrorAction SilentlyContinue | Out-Null
+            $letter = ($newEsp | Get-Volume -ErrorAction SilentlyContinue).DriveLetter
         }
     }
     if (-not $letter) { throw 'Failed to assign drive letter to new ESP.' }
@@ -208,7 +210,7 @@ try {
     $disk = Get-OsDisk
     $finalEsp = Ensure-LargeEsp -Disk $disk -MinMiB $MinEspMiB -NewMiB $NewEspMiB -ShrinkMiB $ShrinkOsMiB
     if ($finalEsp) {
-        $vol = Get-Volume -Partition $finalEsp -ErrorAction SilentlyContinue
+        $vol = $finalEsp | Get-Volume -ErrorAction SilentlyContinue
         $path = if ($vol) { "$($vol.DriveLetter):" } else { '(no drive letter assigned)' }
         Write-Info "ESP ready: PartitionNumber=$($finalEsp.PartitionNumber) SizeMiB=$([math]::Round($finalEsp.Size/1MB)) Path=$path"
         Write-Info 'You can now proceed to boot the Arch USB and install. Mount the larger ESP at /boot.'

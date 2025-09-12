@@ -1034,6 +1034,9 @@ RestartInstallation() {
 
 # Enhanced cleanup on failure with recovery options
 CleanupOnFailure() {
+    local err_code=$?
+    PrintError "Exit code: ${err_code}"
+    PrintError "Last command: ${BASH_COMMAND}"
     if [[ "$INSTALLATION_STARTED" == true ]]; then
         OfferRecoveryOptions "$INSTALLATION_PHASE" "Installation script terminated unexpectedly"
     fi

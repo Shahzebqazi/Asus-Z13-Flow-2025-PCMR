@@ -1228,6 +1228,15 @@ Main() {
     LoadModule "FilesystemSetup"
     LoadModule "CoreInstallation"
     LoadModule "Bootloader"
+    # Optional: ASUS hardware enablement (safe subset)
+    if [[ "$ENABLE_HARDWARE_FIXES" == true ]]; then
+        if [[ -f "$(dirname "$0")/Modules/HardwareEnablement.sh" ]]; then
+            source "$(dirname "$0")/Modules/HardwareEnablement.sh"
+            HWE_AVAILABLE=true
+        else
+            HWE_AVAILABLE=false
+        fi
+    fi
     
     # Run installation sequence
     if [[ "$TUI_ENABLED" == true ]]; then
@@ -1245,8 +1254,12 @@ Main() {
     run_phase "bootloader" bootloader_setup
     
     # Load and run system configuration
-    LoadModule "SystemConfiguration"
-    run_phase "syscfg" system_configuration
+    # Optional hardware enablement (safe subset only on stable core)
+    if [[ "$ENABLE_HARDWARE_FIXES" == true && "$HWE_AVAILABLE" == true ]]; then
+        run_phase "hwe" hardware_enablement_setup
+    fi
+
+    # Skip advanced modules on stable core for now
     
     # Load and run security hardening
     LoadModule "SecurityHardening"

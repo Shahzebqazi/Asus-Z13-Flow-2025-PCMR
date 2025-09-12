@@ -31,6 +31,11 @@ This script combines wisdom from:
 
 ## 🚀 **Quick Start**
 
+**Get the installer (stable):**
+```bash
+curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
+```
+
 ### **Automated Installation (Recommended)**
 ```bash
 # Boot from Arch Linux USB and run (stable branch):
@@ -60,19 +65,13 @@ Perfect for most users - uses optimal settings for Z13:
 ./pcmr.sh --zen-kernel
 ```
 
-### **⚙️ Customized Install (Pick ONE profile, no extra flags)**
+### **⚙️ Customized Install (Zen-only profiles)**
 ```bash
 # Fresh SSD, Zen kernel (recommended default)
 ./pcmr.sh --config Configs/FreshZen.json
 
-# Fresh SSD, standard kernel
-./pcmr.sh --config Configs/FreshStandard.json
-
-# Dual-boot with Windows, Zen kernel
-./pcmr.sh --config Configs/DualBootZen.json
-
-# Dual-boot with Windows, standard kernel
-./pcmr.sh --config Configs/DualBootStandard.json
+# Zen kernel preset (general)
+./pcmr.sh --config Configs/Zen.json
 ```
 
 ### Secure Boot (optional)
@@ -99,16 +98,11 @@ Want full control? Use standard mode and answer prompts:
 | I Want... | Use This Profile |
 |-----------|------------------|
 | **Fresh install, best performance** | `Configs/FreshZen.json` |
-| **Fresh install, stable standard kernel** | `Configs/FreshStandard.json` |
-| **Keep Windows (dual-boot), best performance** | `Configs/DualBootZen.json` (Secure Boot off) |
-| **Keep Windows (dual-boot), standard kernel** | `Configs/DualBootStandard.json` (Secure Boot off) |
+| **Zen preset (general)** | `Configs/Zen.json` |
 | **Full control (interactive)** | `./pcmr.sh --standard` |
 
 ### Learn more about each profile
 - Fresh Zen: see `Docs/Configs/FreshZen.md`
-- Fresh Standard: see `Docs/Configs/FreshStandard.md`
-- Dual-Boot Zen: see `Docs/Configs/DualBootZen.md`
-- Dual-Boot Standard: see `Docs/Configs/DualBootStandard.md`
 
 ## 🚨 **Critical Safety Features**
 
@@ -337,6 +331,25 @@ z13-tdp list
 - Share performance benchmarks with the community
 - Help others troubleshoot their Z13 installations
 - Contribute hardware fixes and optimizations
+
+## 🧭 **Documentation Map**
+
+- User Guide: `Docs/User Guide.md`
+- Agent prompt and project mental map: `Docs/Prompt.md`
+- Module specs and scripts: `Docs/Modules/`
+- Config profiles: `Configs/*.json`
+
+## 🤝 **Contributing**
+
+- Branch policy:
+  - `main`: docs-only; user-first; Quick Start must use the stable raw script.
+  - `stable`: minimal installer and user docs; Zen kernel only; omarchy-only desktop.
+  - `development`: full repo for engineering, CI, modules, advanced docs.
+- Guidelines:
+  - For major changes, open an issue first to align on scope and branch.
+  - Keep docs and scripts in sync across branches when changes land.
+  - Run link checks for `README.md` and all files under `Docs/`.
+  - Ensure desktop references are omarchy-only across docs and code.
 
 ## 📚 **References**
 

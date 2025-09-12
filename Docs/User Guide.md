@@ -23,17 +23,11 @@ If you prefer explicit configs instead of defaults, pick one profile and run it.
 # Fresh SSD, Zen kernel (recommended default)
 ./pcmr.sh --config Configs/FreshZen.json
 
-# Fresh SSD, standard kernel
-./pcmr.sh --config Configs/FreshStandard.json
-
-# Keep Windows (dual-boot), Zen kernel
-./pcmr.sh --config Configs/DualBootZen.json
-
-# Keep Windows (dual-boot), standard kernel
-./pcmr.sh --config Configs/DualBootStandard.json
+# Zen kernel preset (general)
+./pcmr.sh --config Configs/Zen.json
 ```
 
-Learn more: `Docs/Configs/FreshZen.md`, `Docs/Configs/FreshStandard.md`, `Docs/Configs/DualBootZen.md`, `Docs/Configs/DualBootStandard.md`.
+Learn more: `Docs/Configs/FreshZen.md`.
 
 ## Dual‑Boot Prep on Windows (Recommended)
 

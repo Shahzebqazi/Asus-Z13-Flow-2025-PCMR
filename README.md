@@ -31,6 +31,11 @@ This script combines wisdom from:
 
 ## 🚀 **Quick Start**
 
+**Get the installer (stable):**
+```bash
+curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
+```
+
 ### **Automated Installation (Recommended)**
 ```bash
 # Boot from Arch Linux USB and run (stable branch):

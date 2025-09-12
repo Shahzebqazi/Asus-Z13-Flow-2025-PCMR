@@ -202,6 +202,7 @@ is_phase_done() {
 run_phase() {
     local phase_name="$1"; shift
     local func_name="$1"; shift
+    INSTALLATION_PHASE="$phase_name"
     if is_phase_done "$phase_name"; then
         PrintStatus "Skipping phase '$phase_name' (already completed)"
         return 0

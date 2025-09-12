@@ -24,7 +24,11 @@ bootloader_setup() {
         arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg || HandleFatalError "grub-mkconfig failed"
     else
         PrintStatus "Installing systemd-boot"
-        # systemd-bootctl is provided by systemd (already installed via base)
+        # Ensure /boot is mounted and systemd is present
+        if ! mountpoint -q /mnt/boot; then
+            HandleFatalError "/mnt/boot is not mounted"
+        fi
+        arch-chroot /mnt which bootctl >/dev/null 2>&1 || HandleFatalError "bootctl not found inside chroot"
         arch-chroot /mnt bootctl install || HandleFatalError "bootctl install failed"
         PrintStatus "systemd-boot installed"
 

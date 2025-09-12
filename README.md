@@ -46,11 +46,8 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.s
 Note: local configs require cloning the stable branch:
 `git clone -b stable https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR.git`
 ```bash
-# Download and run with Level1Techs config
-./pcmr.sh --config Configs/Level1Techs.json
-
-# Run with Zen kernel optimization
-./pcmr.sh --zen-kernel --config Configs/Zen.json
+# Run with the stable Zen profile
+./pcmr.sh --config Configs/Zen.json
 
 # Dual-boot with existing Windows
 ./pcmr.sh --dual-boot-gpt --zen-kernel
@@ -65,12 +62,8 @@ Perfect for most users - uses optimal settings for Z13:
 ./pcmr.sh --zen-kernel
 ```
 
-### **⚙️ Customized Install (Zen-only profiles)**
+### **⚙️ Customized Install (stable)**
 ```bash
-# Fresh SSD, Zen kernel (recommended default)
-./pcmr.sh --config Configs/FreshZen.json
-
-# Zen kernel preset (general)
 ./pcmr.sh --config Configs/Zen.json
 ```
 
@@ -97,12 +90,11 @@ Want full control? Use standard mode and answer prompts:
 
 | I Want... | Use This Profile |
 |-----------|------------------|
-| **Fresh install, best performance** | `Configs/FreshZen.json` |
-| **Zen preset (general)** | `Configs/Zen.json` |
+| **Stable preset (Zen)** | `Configs/Zen.json` |
 | **Full control (interactive)** | `./pcmr.sh --standard` |
 
-### Learn more about each profile
-- Fresh Zen: see `Docs/Configs/FreshZen.md`
+### Learn more
+See `Docs/User Guide.md`.
 
 ## 🚨 **Critical Safety Features**
 
@@ -152,7 +144,7 @@ Your ASUS ROG Flow Z13 (2025) isn't just another laptop - it's a technological m
 This script includes hardware-specific optimizations that differentiate it from generic Strix Halo guides:
 
 **🔧 Z13 Flow Hardware Optimizations**
-- **MediaTek MT7922 WiFi**: Z13-specific stability fixes and power management (uses mt7921e driver)
+- **MediaTek MT7925e Wi‑Fi**: stability fixes and power policy adjustments
 - **ASUS ROG Controls**: Limited `asusctl` support for basic functions (fan control, power profiles)
 - **180Hz Display**: Native refresh rate configuration (VRR support varies by kernel)
 - **Audio Array**: Basic speaker configuration for Z13's setup
@@ -278,7 +270,7 @@ cat /etc/systemd/logind.conf.d/z13-lid.conf
 xrandr --verbose
 
 # Test 180Hz mode manually
-xrandr --output eDP-1 --mode 1920x1200 --rate 180
+xrandr --output eDP-1 --mode 2560x1600 --rate 180
 
 # Verify VRR support
 cat /sys/class/drm/card*/device/pp_features
@@ -335,8 +327,9 @@ z13-tdp list
 ## 🧭 **Documentation Map**
 
 - User Guide: `Docs/User Guide.md`
+- Troubleshooting Guide: `Docs/Troubleshooting Guide.md`
 - Agent prompt and project mental map: `Docs/Prompt.md`
-- Module specs and scripts: `Docs/Modules/`
+- Module scripts: `Modules/*.sh`
 - Config profiles: `Configs/*.json`
 
 ## 🤝 **Contributing**
@@ -365,22 +358,28 @@ z13-tdp list
 
 **Want to contribute?** This project uses modern software engineering principles to create a maintainable, scalable installation system. See `Docs/User Guide.md` for user docs and `Docs/Prompt.md` for agent/developer context. Module specs live in `Docs/Modules/`.
 
-## 🪟 Windows Preparation Utility
+## 🪟 Windows Preparation Utilities
 
-For dual-boot or when Windows is already installed, use the PowerShell helper to prepare safely:
+Run in an elevated PowerShell in Windows (Administrator):
 
 ```powershell
-# Run as Administrator in Windows
 cd C:\path\to\repo\Windows
-PowerShell -ExecutionPolicy Bypass -File .\Create-Arch-USB.ps1 -BackupTargetDriveLetter E: -MinEspMiB 260 -NewEspMiB 300
 
-# Optional: launch Rufus with the Arch ISO preselected
+# 1) Preinstall checks (non-destructive):
+PowerShell -ExecutionPolicy Bypass -File .\Preinstall-Check.ps1
+
+# 2) Ensure ESP is large enough (safe: creates new ESP; does not move the original):
+PowerShell -ExecutionPolicy Bypass -File .\Ensure-ESP.ps1 -MinEspMiB 260 -NewEspMiB 300 -ShrinkOsMiB 512
+
+# 3) Make Arch USB with Rufus (GUI):
+PowerShell -ExecutionPolicy Bypass -File .\Make-Arch-USB.ps1 -RufusPath C:\Tools\rufus.exe -ISOPath C:\Users\you\Downloads\archlinux.iso
+
+# Or run the orchestrator to do checks + ESP + optional USB:
 PowerShell -ExecutionPolicy Bypass -File .\Create-Arch-USB.ps1 -CreateUSB -RufusPath C:\Tools\rufus.exe -ISOPath C:\Users\you\Downloads\archlinux.iso
 ```
 
-What it does:
-- Creates a system restore point and optional system image backup (USB/network)
-- Ensures a sufficiently sized EFI partition by creating a new ESP at the end of disk and deploying Windows boot files via `bcdboot` (does not move the original ESP)
-- Optionally launches Rufus to create the Arch USB installer
+Notes:
+- The ESP script creates a new ESP at the end of disk and populates it via `bcdboot`; the original ESP remains as fallback.
+- Rufus is launched with the ISO preselected; complete the GUI steps.
 
 See also: `Docs/User Guide.md` → Windows Preparation and the Arch Wiki on Windows ESP sizing.

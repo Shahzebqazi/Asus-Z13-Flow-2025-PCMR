@@ -193,6 +193,12 @@ function Launch-Rufus {
 
 try {
     Assert-Admin
+    
+    # Preinstall checks (non-destructive)
+    $precheck = Join-Path $PSScriptRoot 'Preinstall-Check.ps1'
+    if (-not (Test-Path $precheck)) { throw "Missing script: $precheck" }
+    & $precheck -MinEspMiB $MinEspMiB
+    if ($LASTEXITCODE -ne 0) { throw 'Preinstall checks failed. Resolve issues and re-run.' }
 
     if (-not $SkipBackup) {
         New-SystemRestorePoint
@@ -207,16 +213,17 @@ try {
 
     Suspend-BitLockerIfNeeded
 
-    $disk = Get-OsDisk
-    $finalEsp = Ensure-LargeEsp -Disk $disk -MinMiB $MinEspMiB -NewMiB $NewEspMiB -ShrinkMiB $ShrinkOsMiB
-    if ($finalEsp) {
-        $vol = $finalEsp | Get-Volume -ErrorAction SilentlyContinue
-        $path = if ($vol) { "$($vol.DriveLetter):" } else { '(no drive letter assigned)' }
-        Write-Info "ESP ready: PartitionNumber=$($finalEsp.PartitionNumber) SizeMiB=$([math]::Round($finalEsp.Size/1MB)) Path=$path"
-        Write-Info 'You can now proceed to boot the Arch USB and install. Mount the larger ESP at /boot.'
-    }
+    # Ensure ESP using dedicated script
+    $ensureEsp = Join-Path $PSScriptRoot 'Ensure-ESP.ps1'
+    if (-not (Test-Path $ensureEsp)) { throw "Missing script: $ensureEsp" }
+    & $ensureEsp -MinEspMiB $MinEspMiB -NewEspMiB $NewEspMiB -ShrinkOsMiB $ShrinkOsMiB
 
-    if ($CreateUSB) { Launch-Rufus -Path $RufusPath -Iso $ISOPath -Device $USBDevice }
+    if ($CreateUSB) {
+        # Launch Rufus via dedicated script
+        $makeUsb = Join-Path $PSScriptRoot 'Make-Arch-USB.ps1'
+        if (-not (Test-Path $makeUsb)) { throw "Missing script: $makeUsb" }
+        & $makeUsb -RufusPath $RufusPath -ISOPath $ISOPath -USBDevice $USBDevice
+    }
 
     Write-Info 'All done.'
 } catch {

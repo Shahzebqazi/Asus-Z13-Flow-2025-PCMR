@@ -1259,23 +1259,7 @@ Main() {
         run_phase "hwe" hardware_enablement_setup
     fi
 
-    # Skip advanced modules on stable core for now
-    
-    # Load and run security hardening
-    LoadModule "SecurityHardening"
-    run_phase "hardening" security_hardening_setup
-    
-    # Load and run performance optimization
-    LoadModule "PerformanceOptimization"
-    run_phase "performance" performance_optimization_setup
-    
-    # Load and run system monitoring
-    LoadModule "SystemMonitoring"
-    run_phase "monitoring" system_monitoring_setup
-    
-    # Load and run backup and recovery system
-    LoadModule "BackupRecovery"
-    run_phase "backup" backup_recovery_setup
+    # Stable: skip advanced modules (security hardening, performance, monitoring, backup)
     
     if [[ "$TUI_ENABLED" == true ]]; then
         add_log_message "🎉 Installation completed successfully!"

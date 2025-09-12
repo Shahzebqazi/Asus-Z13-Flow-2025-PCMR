@@ -12,6 +12,10 @@ print_disks() {
 }
 
 select_install_type() {
+    if [[ -n "$DUAL_BOOT_MODE" ]]; then
+        PrintStatus "Install type preselected: $DUAL_BOOT_MODE"
+        return
+    fi
     echo "Select installation type:"
     echo "  1) Fresh install (use entire disk)"
     echo "  2) Dual-boot with Windows (preserve existing Windows)"
@@ -87,7 +91,11 @@ prepare_partitions() {
 
 format_partitions() {
     PrintStatus "Formatting partitions"
-    mkfs.fat -F32 "$EFI_PART"
+    if [[ "$DUAL_BOOT_MODE" == "new" ]]; then
+        mkfs.fat -F32 "$EFI_PART"
+    else
+        PrintStatus "Preserving existing EFI System Partition at $EFI_PART"
+    fi
     mkfs.ext4 -F "$ROOT_PART"
     if [[ -n "$SWAP_PART" ]]; then mkswap "$SWAP_PART" ; fi
 }

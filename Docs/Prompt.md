@@ -47,3 +47,10 @@ Tech Debt / Future:
 - Complete `Docs/Modules/*` with inputs/outputs and idempotency details.
 - Implement `Windows/Create-Arch-USB.ps1` and doc.
 - Refine Secure Boot to sign UKI and adopt unified kernel images where feasible.
+
+Active TODOs (sync from repo; update as items complete):
+- Research ASUS Flow Z13 2025 + Arch docs; list missing features [in_progress]
+- Consolidate docs into a base with user stories, requirements, specs, architecture [pending]
+- Create Docs/Modules/*.md documenting each module script [pending]
+- Add PowerShell script to create Arch USB with Rufus + docs [pending]
+- Integrate Secure Boot (sbctl) via systemd-boot or GRUB [pending]

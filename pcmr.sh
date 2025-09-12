@@ -1242,7 +1242,10 @@ Main() {
     
     # Validate prerequisites
     ValidatePrerequisites
-    
+
+    # Ensure full repository content is available when run via curl|bash (before any prompts)
+    SelfBootstrapIfNeeded "$@"
+
     # Show installation summary
     ShowSummary
     
@@ -1257,9 +1260,6 @@ Main() {
         OfferDetachOption "Pre-Installation Setup"
     fi
     
-    # Ensure full repository content is available when run via curl|bash (before loading TUI or modules)
-    SelfBootstrapIfNeeded "$@"
-
     # Load TUI display system (unless disabled)
     if [[ "$FORCE_NO_TUI" == true ]]; then
         TUI_ENABLED=false

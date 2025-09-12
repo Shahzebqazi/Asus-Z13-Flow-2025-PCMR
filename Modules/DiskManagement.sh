@@ -21,7 +21,7 @@ select_install_type() {
     echo "  2) Dual-boot with Windows (preserve existing Windows)"
     local choice
     while true; do
-        read -p "Enter choice (1-2): " choice
+        read -p "Enter choice (1-2): " choice < "$TTY_INPUT" || true
         case "$choice" in
             1)
                 DUAL_BOOT_MODE="new"
@@ -40,7 +40,7 @@ select_disk() {
     echo "Available disks:"
     print_disks
     while true; do
-        read -p "Enter target disk (e.g., /dev/nvme0n1): " DISK_DEVICE
+        read -p "Enter target disk (e.g., /dev/nvme0n1): " DISK_DEVICE < "$TTY_INPUT" || true
         if [[ -b "$DISK_DEVICE" ]]; then
             break
         else
@@ -51,7 +51,7 @@ select_disk() {
 
 confirm_destructive_action() {
     echo "WARNING: This will modify disk partitions on $DISK_DEVICE."
-    read -p "Type 'YES' to continue: " confirm
+    read -p "Type 'YES' to continue: " confirm < "$TTY_INPUT" || true
     [[ "$confirm" == "YES" ]] || HandleFatalError "User aborted at disk confirmation"
 }
 
@@ -81,10 +81,10 @@ prepare_partitions() {
         if [[ -z "$EFI_PART" ]]; then HandleFatalError "No EFI partition found. Prepare Windows ESP first."; fi
         echo "Existing partitions on $DISK_DEVICE:"; print_disks
         while true; do
-            read -p "Enter Linux root partition (e.g., /dev/nvme0n1p5): " ROOT_PART
+            read -p "Enter Linux root partition (e.g., /dev/nvme0n1p5): " ROOT_PART < "$TTY_INPUT" || true
             [[ -b "$ROOT_PART" ]] && break || echo "Invalid partition"
         done
-        read -p "Enter swap partition (optional, blank to skip): " SWAP_PART
+        read -p "Enter swap partition (optional, blank to skip): " SWAP_PART < "$TTY_INPUT" || true
         [[ -n "$SWAP_PART" && ! -b "$SWAP_PART" ]] && HandleValidationError "Invalid swap partition"
     fi
 }

@@ -99,6 +99,9 @@ ENABLE_PERFORMANCE_OPTIMIZATION=false
 ENABLE_SYSTEM_MONITORING=false
 ENABLE_BACKUP_RECOVERY=false
 
+# Password policy
+MIN_PASSWORD_LENGTH=4
+
 # Installation state tracking
 INSTALLATION_PHASE=""
 RETRY_COUNT=0
@@ -548,8 +551,8 @@ CollectPasswords() {
         read -s ROOT_PASSWORD < "$TTY_INPUT" || true
         echo
         
-        if [[ ${#ROOT_PASSWORD} -lt 8 ]]; then
-            PrintWarning "Password must be at least 8 characters long"
+        if [[ ${#ROOT_PASSWORD} -lt ${MIN_PASSWORD_LENGTH} ]]; then
+            PrintWarning "Password must be at least ${MIN_PASSWORD_LENGTH} characters long"
             ROOT_PASSWORD=""
             continue
         fi
@@ -570,8 +573,8 @@ CollectPasswords() {
         read -s USER_PASSWORD < "$TTY_INPUT" || true
         echo
         
-        if [[ ${#USER_PASSWORD} -lt 8 ]]; then
-            PrintWarning "Password must be at least 8 characters long"
+        if [[ ${#USER_PASSWORD} -lt ${MIN_PASSWORD_LENGTH} ]]; then
+            PrintWarning "Password must be at least ${MIN_PASSWORD_LENGTH} characters long"
             USER_PASSWORD=""
             continue
         fi

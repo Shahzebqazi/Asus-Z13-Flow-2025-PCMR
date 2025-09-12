@@ -1,6 +1,6 @@
 # User Guide — Arch Linux on ASUS ROG Flow Z13 (2025)
 
-This guide is for Z13 Flow (2025) with AMD Ryzen Strix Halo. It focuses on the fastest, safest path with minimal choices. Developer/agent details live in `Docs/Prompt.md`.
+This guide is for Z13 Flow (2025) with AMD Ryzen Strix Halo. It focuses on the fastest, safest path with minimal choices.
 
 ## Quick Start (Recommended)
 
@@ -189,4 +189,37 @@ cp Configs/Zen.json Configs/MyCustom.json
 
 For deep dives (kernel params, module tuning, services, advanced security), see the project’s developer docs (`Docs/Prompt.md` for agents) or open an issue to request coverage in the user guide.
 
+
+### Custom TDP Profiles (optional)
+
+```bash
+# Create a custom profile (AC_Watts BATTERY_Watts "Description")
+sudo z13-tdp create dev_profile 35 20 "Development workload"
+
+# List and use profiles
+z13-tdp list
+z13-tdp dev_profile
+```
+
+JSON-based configs can set defaults too:
+```json
+{ "power": { "default_tdp_profile": "balanced" } }
+```
+
+### Performance tuning (quick actions)
+
+```bash
+# Switch CPU governor (performance | ondemand | powersave)
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor >/dev/null
+
+# AMD P-State Energy Performance Preference (performance | balance_performance | balance_power | power)
+for f in /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference; do echo balance_performance | sudo tee "$f" >/dev/null; done
+
+# Quick TDP changes
+z13-tdp gaming     # maximize performance (thermal limits apply)
+z13-tdp balanced   # recommended default
+z13-tdp efficient  # maximize battery life
+```
+
+Note: Advanced tuning can reduce stability or battery life. If unsure, return to balanced defaults.
 

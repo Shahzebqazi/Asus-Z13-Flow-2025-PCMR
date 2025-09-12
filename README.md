@@ -343,6 +343,26 @@ z13-tdp list
 - Help others troubleshoot their Z13 installations
 - Contribute hardware fixes and optimizations
 
+## 🧭 **Documentation Map**
+
+- User Guide: `Docs/User Guide.md`
+- Troubleshooting: `Docs/Troubleshooting Guide.md`
+- Agent prompt and project mental map: `Docs/Prompt.md`
+- Module specs and scripts: `Docs/Modules/`
+- Config profiles: `Configs/*.json`
+
+## 🤝 **Contributing**
+
+- Branch policy:
+  - `main`: docs-only; user-first; Quick Start must use the stable raw script.
+  - `stable`: minimal installer and user docs; Zen kernel only; omarchy-only desktop.
+  - `development`: full repo for engineering, CI, modules, advanced docs.
+- Guidelines:
+  - For major changes, open an issue first to align on scope and branch.
+  - Keep docs and scripts in sync across branches when changes land.
+  - Run link checks for `README.md` and all files under `Docs/`.
+  - Ensure desktop references are omarchy-only across docs and code.
+
 ## 📚 **References**
 
 - [Level1Techs Z13 Linux Guide](https://forum.level1techs.com/t/flow-z13-asus-setup-on-linux-may-2025-wip/229551)

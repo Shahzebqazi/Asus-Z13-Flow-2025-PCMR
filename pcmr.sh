@@ -26,9 +26,11 @@ fi
 
 # Always resolve modules relative to the script directory
 MODULES_DIR="$SCRIPT_DIR/Modules"
-# If stdin is not a TTY (e.g., running via curl | bash), reattach to the terminal so reads work
-if [[ ! -t 0 && -e /dev/tty ]]; then
-    exec </dev/tty
+# Determine a safe input device for interactive reads without disturbing stdin (important for curl|bash)
+if [[ -e /dev/tty ]]; then
+    TTY_INPUT="/dev/tty"
+else
+    TTY_INPUT="/dev/stdin"
 fi
 
 # Global variables
@@ -322,10 +324,10 @@ ReadValidatedInput() {
     
     while [[ $attempts -lt $max_attempts ]]; do
         if [[ -n "$default_value" ]]; then
-            read -p "$prompt (default: $default_value): " input
+            read -p "$prompt (default: $default_value): " input < "$TTY_INPUT"
             input="${input:-$default_value}"
         else
-            read -p "$prompt: " input
+            read -p "$prompt: " input < "$TTY_INPUT"
         fi
         
         if [[ -n "$validation_func" ]] && declare -F "$validation_func" >/dev/null 2>&1; then
@@ -355,7 +357,7 @@ ReadValidatedChoice() {
     local attempts=0
     local input=""
     while [[ $attempts -lt $max_attempts ]]; do
-        read -p "$prompt: " input
+        read -p "$prompt: " input < "$TTY_INPUT"
         if ValidateChoice "$input" "$max_choice" "$description"; then
             echo "$input"
             return 0
@@ -375,7 +377,7 @@ ReadValidatedYesNo() {
     local attempts=0
     local input=""
     while [[ $attempts -lt $max_attempts ]]; do
-        read -p "$prompt (y/n): " input
+        read -p "$prompt (y/n): " input < "$TTY_INPUT"
         if ValidateYesNo "$input" "$description"; then
             echo "$input"
             return 0
@@ -837,7 +839,7 @@ ShowSummary() {
     fi
     
     echo "Press Enter to continue or Ctrl+C to cancel..."
-    read -r
+    read -r < "$TTY_INPUT"
 }
 
 # Function to validate prerequisites
@@ -889,7 +891,7 @@ OfferRecoveryOptions() {
         echo "3) Clean up and exit (manual recovery)"
         echo ""
         
-        read -p "Choose recovery option (1-3): " recovery_choice
+        read -p "Choose recovery option (1-3): " recovery_choice < "$TTY_INPUT"
         
         case "$recovery_choice" in
             1)
@@ -1006,14 +1008,14 @@ RestartInstallation() {
     
     # Offer to change configuration
     echo ""
-    read -p "Would you like to use a different configuration? (y/n): " change_config
+    read -p "Would you like to use a different configuration? (y/n): " change_config < "$TTY_INPUT"
     
     if [[ "$change_config" =~ ^[Yy] ]]; then
         echo "Available configurations:"
         echo "1) Zen.json (stable default)"
         echo "2) Keep current configuration"
         
-        read -p "Choose configuration (1-2): " config_choice
+        read -p "Choose configuration (1-2): " config_choice < "$TTY_INPUT"
         
         case "$config_choice" in
             1) LoadConfig "$SCRIPT_DIR/Configs/Zen.json" ;;
@@ -1101,7 +1103,7 @@ OfferDetachOption() {
         PrintStatus "Current phase: $phase"
         PrintStatus "You can detach from this installation to do other tasks."
         echo ""
-        read -p "Would you like to detach now? (y/n): " detach_choice
+        read -p "Would you like to detach now? (y/n): " detach_choice < "$TTY_INPUT"
         
         if [[ "$detach_choice" =~ ^[Yy] ]]; then
             EnableDetachedMode

@@ -59,6 +59,97 @@ function Write-Info($msg)  { Write-Host "[INFO] $msg" -ForegroundColor Green }
 function Write-Warn($msg)  { Write-Host "[WARN] $msg" -ForegroundColor Yellow }
 function Write-ErrorMsg($msg) { Write-Host "[ERROR] $msg" -ForegroundColor Red }
 
+function Write-Log($Level, $Message) {
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] [$Level] $Message"
+    
+    switch ($Level) {
+        'INFO' { Write-Host $logMessage -ForegroundColor Green }
+        'WARN' { Write-Host $logMessage -ForegroundColor Yellow }
+        'ERROR' { Write-Host $logMessage -ForegroundColor Red }
+        default { Write-Host $logMessage }
+    }
+    
+    # Optionally write to log file
+    $logFile = Join-Path $env:TEMP "arch-usb-setup.log"
+    try {
+        Add-Content -Path $logFile -Value $logMessage -ErrorAction SilentlyContinue
+    } catch {
+        # Ignore log file errors
+    }
+}
+
+function Show-Progress($Current, $Total, $Operation) {
+    $percent = [math]::Round(($Current / $Total) * 100, 1)
+    $progressBar = "[" + ("=" * [math]::Floor($percent / 5)) + (" " * (20 - [math]::Floor($percent / 5))) + "]"
+    Write-Host "`r$progressBar $percent% - $Operation" -NoNewline
+    if ($Current -eq $Total) { Write-Host "" }
+}
+
+function Invoke-WithRollback($Operation, $RollbackOperation) {
+    try {
+        Write-Log 'INFO' "Starting operation: $Operation"
+        $result = & $Operation
+        Write-Log 'INFO' "Operation completed successfully: $Operation"
+        return $result
+    } catch {
+        Write-Log 'ERROR' "Operation failed: $Operation - $($_.Exception.Message)"
+        if ($RollbackOperation) {
+            try {
+                Write-Log 'INFO' "Attempting rollback: $RollbackOperation"
+                & $RollbackOperation
+                Write-Log 'INFO' "Rollback completed: $RollbackOperation"
+            } catch {
+                Write-Log 'ERROR' "Rollback failed: $RollbackOperation - $($_.Exception.Message)"
+            }
+        }
+        throw
+    }
+}
+
+function Test-InputValidation {
+    Write-Log 'INFO' 'Validating input parameters...'
+    
+    # Validate ESP sizes
+    if ($MinEspMiB -lt 100) { throw 'MinEspMiB must be at least 100 MiB' }
+    if ($NewEspMiB -lt $MinEspMiB) { throw 'NewEspMiB must be at least MinEspMiB' }
+    if ($ShrinkOsMiB -lt 100) { throw 'ShrinkOsMiB must be at least 100 MiB' }
+    
+    # Validate backup parameters
+    if ($BackupTargetDriveLetter -and $BackupNetworkPath) {
+        throw 'Cannot specify both BackupTargetDriveLetter and BackupNetworkPath'
+    }
+    
+    if ($BackupTargetDriveLetter) {
+        if (-not ($BackupTargetDriveLetter -match '^[A-Z]:$')) {
+            throw 'BackupTargetDriveLetter must be in format "X:" where X is a drive letter'
+        }
+        if (-not (Test-Path $BackupTargetDriveLetter)) {
+            throw "Backup target drive $BackupTargetDriveLetter not found"
+        }
+    }
+    
+    if ($BackupNetworkPath) {
+        if (-not ($BackupNetworkPath -match '^\\\\')) {
+            throw 'BackupNetworkPath must be a UNC path (\\server\share)'
+        }
+    }
+    
+    # Validate USB creation parameters
+    if ($CreateUSB) {
+        if (-not $RufusPath) { throw 'RufusPath is required when CreateUSB is specified' }
+        if (-not $ISOPath) { throw 'ISOPath is required when CreateUSB is specified' }
+        
+        if (-not (Test-Path $RufusPath)) { throw "Rufus not found at: $RufusPath" }
+        if (-not (Test-Path $ISOPath)) { throw "ISO not found at: $ISOPath" }
+        
+        # Validate ISO file extension
+        if (-not ($ISOPath -match '\.iso$')) { throw 'ISOPath must be a .iso file' }
+    }
+    
+    Write-Log 'INFO' 'Input validation completed successfully'
+}
+
 function New-SystemRestorePoint {
     try {
         Write-Info 'Creating a system restore point...'
@@ -186,6 +277,111 @@ function Ensure-LargeEsp {
     return (Get-Partition -DiskNumber $Disk.Number | Where-Object { $_.AccessPaths -like "$newEspPath*" })
 }
 
+function Test-ArchInstallationMedia {
+    Write-Info 'Scanning for existing Arch Linux USB drives...'
+    $usbDrives = Get-WmiObject -Class Win32_LogicalDisk | Where-Object { $_.DriveType -eq 2 -and $_.Size -gt 1GB }
+    $archDrives = @()
+    
+    foreach ($drive in $usbDrives) {
+        $driveLetter = $drive.DeviceID
+        $label = $drive.VolumeLabel
+        $size = [math]::Round($drive.Size / 1GB, 2)
+        
+        # Check for common Arch Linux indicators
+        $archIndicators = @(
+            "$driveLetter\arch\",
+            "$driveLetter\EFI\arch\",
+            "$driveLetter\isolinux\",
+            "$driveLetter\boot\"
+        )
+        
+        $isArch = $false
+        foreach ($indicator in $archIndicators) {
+            if (Test-Path $indicator) {
+                $isArch = $true
+                break
+            }
+        }
+        
+        if ($isArch -or $label -match 'ARCH|arch|Arch') {
+            $archDrives += @{
+                DriveLetter = $driveLetter
+                Label = $label
+                Size = $size
+                IsArch = $isArch
+            }
+        }
+    }
+    
+    return $archDrives
+}
+
+function Test-RufusInstallation {
+    param([string]$RufusPath)
+    
+    if ($RufusPath -and (Test-Path $RufusPath)) {
+        Write-Info "Rufus found at: $RufusPath"
+        try {
+            $version = (Get-ItemProperty $RufusPath).VersionInfo.FileVersion
+            Write-Info "Rufus version: $version"
+            return $true
+        } catch {
+            Write-Warn "Could not determine Rufus version: $($_.Exception.Message)"
+            return $true  # Assume it's working if we can't get version
+        }
+    }
+    
+    # Try common installation paths
+    $commonPaths = @(
+        "${env:ProgramFiles}\Rufus\rufus.exe",
+        "${env:ProgramFiles(x86)}\Rufus\rufus.exe",
+        "${env:LOCALAPPDATA}\Rufus\rufus.exe"
+    )
+    
+    foreach ($path in $commonPaths) {
+        if (Test-Path $path) {
+            Write-Info "Found Rufus at: $path"
+            return $true
+        }
+    }
+    
+    Write-Warn 'Rufus not found. Please install Rufus from https://rufus.ie/'
+    Write-Info 'You can also specify the path with -RufusPath parameter'
+    return $false
+}
+
+function Test-USBDriveStatus {
+    Write-Info 'Checking USB drive status...'
+    $usbDrives = Get-WmiObject -Class Win32_LogicalDisk | Where-Object { $_.DriveType -eq 2 }
+    
+    if ($usbDrives.Count -eq 0) {
+        Write-Warn 'No USB drives detected. Please insert a USB drive.'
+        return $false
+    }
+    
+    Write-Info "Found $($usbDrives.Count) USB drive(s):"
+    foreach ($drive in $usbDrives) {
+        $driveLetter = $drive.DeviceID
+        $label = $drive.VolumeLabel
+        $size = [math]::Round($drive.Size / 1GB, 2)
+        $freeSpace = [math]::Round($drive.FreeSpace / 1GB, 2)
+        
+        Write-Info "  $driveLetter - $label (${size}GB total, ${freeSpace}GB free)"
+        
+        # Check for errors
+        if ($drive.Status -ne 'OK') {
+            Write-Warn "    Warning: Drive status is $($drive.Status)"
+        }
+        
+        # Check for sufficient space (at least 2GB for Arch ISO)
+        if ($freeSpace -lt 2) {
+            Write-Warn "    Warning: Insufficient free space for Arch Linux ISO"
+        }
+    }
+    
+    return $true
+}
+
 function Launch-Rufus {
     param([string]$Path,[string]$Iso,[string]$Device)
     if (-not (Test-Path $Path)) { Write-Warn 'Rufus not found; skipping USB creation.'; return }
@@ -220,18 +416,27 @@ function Disable-HibernationSafely {
 }
 
 try {
-    Assert-Admin
+    Write-Log 'INFO' 'Starting Arch Linux USB setup process...'
     
-    # Optional power fixes before disk work
+    # Step 1: Admin check and input validation
+    Show-Progress 1 8 'Validating prerequisites'
+    Assert-Admin
+    Test-InputValidation
+    
+    # Step 2: Power fixes
+    Show-Progress 2 8 'Applying power fixes'
     if ($ApplyPowerFixes -or $DisableHibernation) { Disable-HibernationSafely }
     if ($ApplyPowerFixes -or $DisableFastStartup) { Disable-FastStartupSafely }
 
-    # Preinstall checks (non-destructive)
-    $precheck = Join-Path $PSScriptRoot 'Preinstall-Check.ps1'
+    # Step 3: Preflight checks
+    Show-Progress 3 8 'Running preflight checks'
+    $precheck = Join-Path $PSScriptRoot 'Preflight-Checklist.ps1'
     if (-not (Test-Path $precheck)) { throw "Missing script: $precheck" }
     & $precheck -MinEspMiB $MinEspMiB
-    if ($LASTEXITCODE -ne 0) { throw 'Preinstall checks failed. Resolve issues and re-run.' }
+    if ($LASTEXITCODE -ne 0) { throw 'Preflight checks failed. Resolve issues and re-run.' }
 
+    # Step 4: Backup operations
+    Show-Progress 4 8 'Creating backups'
     if (-not $SkipBackup) {
         New-SystemRestorePoint
         if ($BackupTargetDriveLetter -or $BackupNetworkPath) {
@@ -243,26 +448,70 @@ try {
         Write-Warn 'Backup skipped by user request.'
     }
 
+    # Step 5: BitLocker suspension
+    Show-Progress 5 8 'Suspending BitLocker'
     Suspend-BitLockerIfNeeded
 
-    # Ensure ESP using dedicated script
+    # Step 6: ESP management
+    Show-Progress 6 8 'Ensuring ESP configuration'
     $ensureEsp = Join-Path $PSScriptRoot 'Ensure-ESP.ps1'
     if (-not (Test-Path $ensureEsp)) { throw "Missing script: $ensureEsp" }
-    & $ensureEsp -MinEspMiB $MinEspMiB -NewEspMiB $NewEspMiB -ShrinkOsMiB $ShrinkOsMiB @(
-        if ($AllowBitLocker) { '-AllowBitLocker' }
-        if ($SkipPendingRebootCheck) { '-SkipPendingRebootCheck' }
+    
+    # Build parameter array for Ensure-ESP.ps1
+    $ensureEspParams = @(
+        '-MinEspMiB', $MinEspMiB
+        '-NewEspMiB', $NewEspMiB
+        '-ShrinkOsMiB', $ShrinkOsMiB
     )
+    if ($AllowBitLocker) { $ensureEspParams += '-AllowBitLocker' }
+    if ($SkipPendingRebootCheck) { $ensureEspParams += '-SkipPendingRebootCheck' }
+    
+    & $ensureEsp @ensureEspParams
 
+    # Step 7: USB creation (if requested)
     if ($CreateUSB) {
+        Show-Progress 7 8 'Preparing USB creation'
+        
+        # Check for existing Arch installation media
+        $existingArchDrives = Test-ArchInstallationMedia
+        if ($existingArchDrives.Count -gt 0) {
+            Write-Info "Found existing Arch Linux USB drives:"
+            foreach ($drive in $existingArchDrives) {
+                Write-Info "  $($drive.DriveLetter) - $($drive.Label) (${drive.Size}GB)"
+            }
+            $useExisting = Read-Host "Use existing Arch USB drive? (y/N)"
+            if ($useExisting -eq 'y' -or $useExisting -eq 'Y') {
+                Write-Info 'Using existing Arch USB drive. Skipping Rufus launch.'
+                Show-Progress 8 8 'Process completed'
+                return
+            }
+        }
+        
+        # Check USB drive status
+        if (-not (Test-USBDriveStatus)) {
+            Write-Warn 'USB drive check failed. Please ensure USB drives are properly connected.'
+        }
+        
+        # Validate Rufus installation
+        if (-not (Test-RufusInstallation -RufusPath $RufusPath)) {
+            Write-Warn 'Rufus validation failed. Please install Rufus or provide correct path.'
+            return
+        }
+        
         # Launch Rufus via dedicated script
         $makeUsb = Join-Path $PSScriptRoot 'Make-Arch-USB.ps1'
         if (-not (Test-Path $makeUsb)) { throw "Missing script: $makeUsb" }
         & $makeUsb -RufusPath $RufusPath -ISOPath $ISOPath -USBDevice $USBDevice
     }
 
+    # Step 8: Completion
+    Show-Progress 8 8 'Process completed'
+    Write-Log 'INFO' 'Arch Linux USB setup process completed successfully'
     Write-Info 'All done.'
 } catch {
+    Write-Log 'ERROR' "Process failed: $($_.Exception.Message)"
     Write-ErrorMsg $_
+    Write-Log 'INFO' "Log file available at: $env:TEMP\arch-usb-setup.log"
     exit 1
 }
 

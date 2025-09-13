@@ -32,6 +32,43 @@ function Write-Info($m){ Write-Host "[INFO] $m" -ForegroundColor Green }
 function Write-Warn($m){ Write-Host "[WARN] $m" -ForegroundColor Yellow }
 function Write-Err ($m){ Write-Host "[ERROR] $m" -ForegroundColor Red }
 
+function Write-Log($Level, $Message) {
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] [$Level] $Message"
+    
+    switch ($Level) {
+        'INFO' { Write-Host $logMessage -ForegroundColor Green }
+        'WARN' { Write-Host $logMessage -ForegroundColor Yellow }
+        'ERROR' { Write-Host $logMessage -ForegroundColor Red }
+        default { Write-Host $logMessage }
+    }
+    
+    # Write to log file
+    $logFile = Join-Path $env:TEMP "create-partitions.log"
+    try {
+        Add-Content -Path $logFile -Value $logMessage -ErrorAction SilentlyContinue
+    } catch {
+        # Ignore log file errors
+    }
+}
+
+function Test-InputValidation {
+    Write-Log 'INFO' 'Validating input parameters...'
+    
+    # Validate disk number
+    if ($DiskNumber -lt 0) { throw 'DiskNumber must be non-negative' }
+    
+    # Validate partition sizes
+    if ($RootSizeGB -lt 20) { throw 'RootSizeGB must be at least 20GB' }
+    if ($SwapSizeGB -lt 1) { throw 'SwapSizeGB must be at least 1GB' }
+    
+    # Validate reasonable limits
+    if ($RootSizeGB -gt 1000) { throw 'RootSizeGB seems too large (>1000GB)' }
+    if ($SwapSizeGB -gt 100) { throw 'SwapSizeGB seems too large (>100GB)' }
+    
+    Write-Log 'INFO' 'Input validation completed successfully'
+}
+
 function Assert-Admin {
     $id=[Security.Principal.WindowsIdentity]::GetCurrent(); $p=[Security.Principal.WindowsPrincipal]::new($id)
     if(-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){ throw 'Run as Administrator.' }
@@ -51,7 +88,8 @@ function Get-UnallocatedSpace([Microsoft.Management.Infrastructure.CimInstance]$
         $diskSize = $Disk.Size
         $unallocatedRegions = @()
         
-        $currentOffset = 1MB  # Start after protective MBR
+        # Start after GPT header (typically 1MB, but verify)
+        $currentOffset = 1MB
         
         foreach ($partition in $partitions) {
             if ($partition.Offset -gt $currentOffset) {
@@ -163,9 +201,14 @@ function Show-PartitionPlan([Microsoft.Management.Infrastructure.CimInstance]$Di
 }
 
 try {
+    Write-Log 'INFO' 'Starting partition creation process...'
+    
     Assert-Admin
+    Test-InputValidation
     
     $disk = Get-TargetDisk -Number $DiskNumber
+    Write-Log 'INFO' "Working with disk: $($disk.FriendlyName) (Number: $DiskNumber)"
+    
     $rootSizeBytes = $RootSizeGB * 1GB
     $swapSizeBytes = $SwapSizeGB * 1GB
     
@@ -175,6 +218,7 @@ try {
         $confirmation = Read-Host "Proceed with partition creation? (y/N)"
         if ($confirmation -ne 'y' -and $confirmation -ne 'Y') {
             Write-Info "Operation cancelled by user."
+            Write-Log 'INFO' 'Operation cancelled by user'
             exit 0
         }
     }
@@ -182,13 +226,18 @@ try {
     $result = New-LinuxPartitions -Disk $disk -RootSizeBytes $rootSizeBytes -SwapSizeBytes $swapSizeBytes -DryRun $DryRun
     
     if (-not $DryRun) {
+        Write-Log 'INFO' 'Partitions created successfully'
         Write-Info "Partitions created successfully:"
         Write-Info "  Root: Partition $($result.RootPartition.PartitionNumber) on Disk $DiskNumber"
         Write-Info "  Swap: Partition $($result.SwapPartition.PartitionNumber) on Disk $DiskNumber"
         Write-Info "Partitions are ready for Arch Linux installation."
+    } else {
+        Write-Log 'INFO' 'Dry run completed successfully'
     }
     
 } catch {
+    Write-Log 'ERROR' "Partition creation failed: $($_.Exception.Message)"
     Write-Err $_
+    Write-Log 'INFO' "Log file available at: $env:TEMP\create-partitions.log"
     exit 1
 }

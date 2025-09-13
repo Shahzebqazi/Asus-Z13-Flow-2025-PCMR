@@ -340,8 +340,8 @@ Run in an elevated PowerShell in Windows (Administrator):
 ```powershell
 cd C:\path\to\repo\Windows
 
-# 1) Preinstall checks (enhanced with disk health and space validation):
-PowerShell -ExecutionPolicy Bypass -File .\Preinstall-Check.ps1
+# 1) Preflight checks (enhanced with disk health and space validation):
+PowerShell -ExecutionPolicy Bypass -File .\Preflight-Checklist.ps1
 
 # 2) Create Linux partitions from unallocated space:
 PowerShell -ExecutionPolicy Bypass -File .\Create-Partitions.ps1 -DiskNumber 0 -RootSizeGB 50 -SwapSizeGB 8

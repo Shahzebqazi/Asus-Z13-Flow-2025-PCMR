@@ -30,7 +30,7 @@ Before installing alongside Windows, prepare safely with the helper script:
 ```powershell
 # Run in Windows PowerShell as Administrator
 cd C:\path\to\repo\Windows
-PowerShell -ExecutionPolicy Bypass -File .\Preinstall-Check.ps1
+PowerShell -ExecutionPolicy Bypass -File .\Preflight-Checklist.ps1
 PowerShell -ExecutionPolicy Bypass -File .\Ensure-ESP.ps1 -MinEspMiB 260 -NewEspMiB 300 -ShrinkOsMiB 512
 PowerShell -ExecutionPolicy Bypass -File .\Make-Arch-USB.ps1 -RufusPath C:\Tools\rufus.exe -ISOPath C:\Users\me\Downloads\archlinux.iso
 ```

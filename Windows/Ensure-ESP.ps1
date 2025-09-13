@@ -22,6 +22,42 @@ function Write-Info($m){ Write-Host "[INFO] $m" -ForegroundColor Green }
 function Write-Warn($m){ Write-Host "[WARN] $m" -ForegroundColor Yellow }
 function Write-Err ($m){ Write-Host "[ERROR] $m" -ForegroundColor Red }
 
+function Write-Log($Level, $Message) {
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] [$Level] $Message"
+    
+    switch ($Level) {
+        'INFO' { Write-Host $logMessage -ForegroundColor Green }
+        'WARN' { Write-Host $logMessage -ForegroundColor Yellow }
+        'ERROR' { Write-Host $logMessage -ForegroundColor Red }
+        default { Write-Host $logMessage }
+    }
+    
+    # Write to log file
+    $logFile = Join-Path $env:TEMP "ensure-esp.log"
+    try {
+        Add-Content -Path $logFile -Value $logMessage -ErrorAction SilentlyContinue
+    } catch {
+        # Ignore log file errors
+    }
+}
+
+function Test-InputValidation {
+    Write-Log 'INFO' 'Validating input parameters...'
+    
+    # Validate ESP sizes
+    if ($MinEspMiB -lt 100) { throw 'MinEspMiB must be at least 100 MiB' }
+    if ($NewEspMiB -lt $MinEspMiB) { throw 'NewEspMiB must be at least MinEspMiB' }
+    if ($ShrinkOsMiB -lt 100) { throw 'ShrinkOsMiB must be at least 100 MiB' }
+    
+    # Validate reasonable limits
+    if ($MinEspMiB -gt 1000) { throw 'MinEspMiB seems too large (>1000 MiB)' }
+    if ($NewEspMiB -gt 2000) { throw 'NewEspMiB seems too large (>2000 MiB)' }
+    if ($ShrinkOsMiB -gt 10000) { throw 'ShrinkOsMiB seems too large (>10000 MiB)' }
+    
+    Write-Log 'INFO' 'Input validation completed successfully'
+}
+
 function Assert-Admin {
     $id=[Security.Principal.WindowsIdentity]::GetCurrent(); $p=[Security.Principal.WindowsPrincipal]::new($id)
     if(-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){ throw 'Run as Administrator.' }
@@ -103,7 +139,12 @@ function Ensure-LargeEsp([Microsoft.Management.Infrastructure.CimInstance]$Disk,
     $letter = ($newEsp | Get-Volume).DriveLetter
     if(-not $letter){
         try {
-            $letter='S'; Set-Partition -DiskNumber $Disk.Number -PartitionNumber $newEsp.PartitionNumber -NewDriveLetter $letter
+            $letter = 'S'
+            Set-Partition -DiskNumber $Disk.Number -PartitionNumber $newEsp.PartitionNumber -NewDriveLetter $letter
+            # Verify assignment worked
+            if (-not (Get-Volume -DriveLetter $letter -ErrorAction SilentlyContinue)) {
+                throw 'Failed to assign drive letter'
+            }
         } catch {
             throw 'Failed to assign a drive letter to the new ESP.'
         }
@@ -126,15 +167,28 @@ function Ensure-LargeEsp([Microsoft.Management.Infrastructure.CimInstance]$Disk,
 }
 
 try{
+    Write-Log 'INFO' 'Starting ESP management process...'
+    
     Assert-Admin
+    Test-InputValidation
     Assert-NoPendingReboot
     Assert-BitLockerSuspended
+    
     $disk = Get-OsDisk
-    $esp  = Ensure-LargeEsp $disk $MinEspMiB $NewEspMiB $ShrinkOsMiB
-    $mi=[math]::Round($esp.Size/1MB)
-    $vol=$esp|Get-Volume -ErrorAction SilentlyContinue
-    $path= if($vol){"$($vol.DriveLetter):"}else{'(no drive letter)'}
+    Write-Log 'INFO' "Working with disk: $($disk.FriendlyName) (Number: $($disk.Number))"
+    
+    $esp = Ensure-LargeEsp $disk $MinEspMiB $NewEspMiB $ShrinkOsMiB
+    $mi = [math]::Round($esp.Size/1MB)
+    $vol = $esp | Get-Volume -ErrorAction SilentlyContinue
+    $path = if($vol){"$($vol.DriveLetter):"}else{'(no drive letter)'}
+    
+    Write-Log 'INFO' "ESP management completed successfully"
     Write-Info "ESP: Partition=$($esp.PartitionNumber) Size=$mi MiB Path=$path"
-}catch{ Write-Err $_; exit 1 }
+}catch{ 
+    Write-Log 'ERROR' "ESP management failed: $($_.Exception.Message)"
+    Write-Err $_ 
+    Write-Log 'INFO' "Log file available at: $env:TEMP\ensure-esp.log"
+    exit 1 
+}
 
 

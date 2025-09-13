@@ -16,7 +16,7 @@ I've conducted a thorough code review and systematic improvement of your Arch Li
 
 #### Improvements Made:
 
-**Enhanced Preinstall-Check.ps1:**
+**Enhanced Preflight-Checklist.ps1:**
 - Added `Test-UnallocatedSpace()` function to verify sufficient space (minimum 25GB for Arch)
 - Added `Test-DiskHealth()` function to validate disk integrity before operations
 - Improved error reporting with specific recommendations

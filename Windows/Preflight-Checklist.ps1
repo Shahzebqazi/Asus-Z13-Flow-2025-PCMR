@@ -130,12 +130,12 @@ function Main {
     }
 
     if ($fail.Count -eq 0 -and $warn.Count -eq 0) {
-        Write-Info 'Preinstall checks PASSED with no warnings.'
+        Write-Info 'Preflight checks PASSED with no warnings.'
         exit 0
     }
 
     if ($fail.Count -gt 0) {
-        Write-Err 'Preinstall checks FAILED:'
+        Write-Err 'Preflight checks FAILED:'
         $fail | ForEach-Object { Write-Err " - $_" }
         if ($warn.Count -gt 0) {
             Write-Warn 'Additionally, warnings:'
@@ -143,7 +143,7 @@ function Main {
         }
         exit 1
     } else {
-        Write-Warn 'Preinstall checks completed with warnings:'
+        Write-Warn 'Preflight checks completed with warnings:'
         $warn | ForEach-Object { Write-Warn " - $_" }
         exit 0
     }

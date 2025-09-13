@@ -123,18 +123,10 @@ bootloader_setup() {
 
         # Create loader entries (stable minimal)
         mkdir -p /mnt/boot/loader/entries
-        
-        # Handle root specification based on filesystem type
-        local root_spec=""
-        if [[ "$FILESYSTEM" == "zfs" ]]; then
-            root_spec="zfs=zroot/ROOT/default"
-        else
-            local root_uuid
-            root_uuid=$(blkid -s PARTUUID -o value "$ROOT_PART" 2>/dev/null || true)
-            if [[ -z "$root_uuid" ]]; then
-                HandleFatalError "Unable to determine PARTUUID for $ROOT_PART"
-            fi
-            root_spec="root=PARTUUID=$root_uuid"
+        local root_uuid
+        root_uuid=$(blkid -s PARTUUID -o value "$ROOT_PART" 2>/dev/null || true)
+        if [[ -z "$root_uuid" ]]; then
+            HandleFatalError "Unable to determine PARTUUID for $ROOT_PART"
         fi
 
         # Decide kernel flavor
@@ -154,18 +146,13 @@ timeout 3
 editor no
 EOF
 
-        # Write entry with appropriate kernel parameters
-        local kernel_options="$root_spec rw"
-        if [[ "$FILESYSTEM" == "zfs" ]]; then
-            kernel_options="$kernel_options zfs_force=1"
-        fi
-        
+        # Write entry
         cat > "/mnt/boot/loader/entries/${entry_id}.conf" <<EOF
 title $entry_title
 linux /vmlinuz-$kernel_name
 initrd /amd-ucode.img
 initrd /initramfs-$kernel_name.img
-options $kernel_options
+options root=PARTUUID=$root_uuid rw
 EOF
 
         PrintStatus "systemd-boot entry created: $entry_id"
@@ -173,22 +160,6 @@ EOF
             PrintWarning "Secure Boot signing is deferred on stable core. System boots unsigned kernel; signing can be added later."
         fi
     fi
-    
-    # Configure initramfs for ZFS if needed
-    if [[ "$FILESYSTEM" == "zfs" ]]; then
-        PrintStatus "Configuring initramfs for ZFS"
-        
-        # Add zfs hook to mkinitcpio
-        sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf block filesystems keyboard fsck zfs)/' /mnt/etc/mkinitcpio.conf || HandleFatalError "Failed to update mkinitcpio hooks"
-        
-        # Enable ZFS services
-        arch-chroot /mnt systemctl enable zfs-import-cache.service || true
-        arch-chroot /mnt systemctl enable zfs-mount.service || true
-        arch-chroot /mnt systemctl enable zfs-import.target || true
-        
-        # Generate initramfs
-        arch-chroot /mnt mkinitcpio -P || HandleFatalError "Failed to generate initramfs with ZFS support"
-        
-        PrintStatus "ZFS boot configuration completed"
-    fi
 }
+
+

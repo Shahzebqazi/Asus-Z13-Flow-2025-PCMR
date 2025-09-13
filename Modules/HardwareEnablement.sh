@@ -4,20 +4,50 @@
 # Focus: asusctl/asusd, MT7925e stability, backlight keys, BT firmware hints, audio basics
 
 hardware_enablement_setup() {
-    PrintHeader "ASUS Hardware Enablement (optional)"
+    PrintHeader "ASUS Hardware Enablement (Z13 Flow 2025 Optimized)"
 
     # Install ASUS tools and enable services
-    PrintStatus "Installing ASUS utilities (asusctl/asusd)"
-    pacstrap /mnt asusctl supergfxctl || PrintWarning "asusctl/supergfxctl install failed; continuing"
-    arch-chroot /mnt systemctl enable --now supergfxd.service || true
-    arch-chroot /mnt systemctl enable --now asusd.service || true
-    # Enable user notification service for all users on login
-    arch-chroot /mnt systemctl --global enable asus-notify.service || true
+    PrintStatus "Installing ASUS utilities (asusctl/asusd) for Z13 Flow 2025"
+    
+    # Check if packages are available in repositories
+    if arch-chroot /mnt pacman -Ss asusctl >/dev/null 2>&1; then
+        pacstrap /mnt asusctl supergfxctl || PrintWarning "asusctl/supergfxctl install failed; continuing without ASUS-specific tools"
+        
+        # Enable services only if packages were installed successfully
+        if arch-chroot /mnt pacman -Q asusctl >/dev/null 2>&1; then
+            arch-chroot /mnt systemctl enable asusd.service || true
+            arch-chroot /mnt systemctl enable supergfxd.service || true
+            arch-chroot /mnt systemctl --global enable asus-notify.service || true
+            PrintStatus "ASUS services enabled"
+        fi
+    else
+        PrintWarning "ASUS utilities not available in repositories. Consider enabling AUR or manual installation."
+    fi
 
-    # MediaTek MT7925e ASPM stability
-    PrintStatus "Applying MediaTek MT7925e ASPM stability option"
+    # AMD Strix Halo specific optimizations
+    PrintStatus "Applying AMD Strix Halo AI Max+ 395 optimizations"
     mkdir -p /mnt/etc/modprobe.d
+    
+    # AMD GPU optimizations for Strix Halo
+    cat > /mnt/etc/modprobe.d/amdgpu.conf <<EOF
+# AMD Strix Halo optimizations
+options amdgpu si_support=1
+options amdgpu cik_support=1
+options amdgpu dc=1
+options amdgpu dpm=1
+options amdgpu ppfeaturemask=0xffffffff
+EOF
+
+    # MediaTek MT7925e ASPM stability for Z13 Flow 2025
+    PrintStatus "Applying MediaTek MT7925e ASPM stability option"
     echo "options mt7925e disable_aspm=1" > /mnt/etc/modprobe.d/mt7925e.conf
+    
+    # Additional WiFi stability for MT7925e
+    cat >> /mnt/etc/modprobe.d/mt7925e.conf <<EOF
+# Additional stability options for Z13 Flow 2025
+options mt7925e power_save=0
+options cfg80211 ieee80211_default_rc_algo=minstrel_ht
+EOF
 
     # Backlight keys (generic ACPI video backlight)
     PrintStatus "Adding kernel params for backlight keys (video=efifb:off may be needed per kernel)"

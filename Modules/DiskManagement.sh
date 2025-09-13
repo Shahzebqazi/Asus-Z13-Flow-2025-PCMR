@@ -96,24 +96,77 @@ confirm_destructive_action() {
     [[ "$confirm" == "YES" ]] || HandleFatalError "User aborted at disk confirmation"
 }
 
+validate_partition_exists() {
+    local partition="$1"
+    local description="$2"
+    local max_attempts=10
+    local attempt=0
+    
+    while [[ $attempt -lt $max_attempts ]]; do
+        if [[ -b "$partition" ]]; then
+            PrintStatus "$description partition validated: $partition"
+            return 0
+        fi
+        ((attempt++))
+        PrintStatus "Waiting for $description partition to appear... (attempt $attempt/$max_attempts)"
+        sleep 1
+        partprobe "$DISK_DEVICE" 2>/dev/null || true
+    done
+    
+    HandleFatalError "$description partition not found: $partition"
+}
+
 prepare_partitions() {
     if [[ "$DUAL_BOOT_MODE" == "new" ]]; then
         PrintStatus "Partitioning disk for fresh install"
         require_cmd sgdisk
         require_cmd partprobe
+        
+        # Validate disk exists and is not mounted
+        [[ -b "$DISK_DEVICE" ]] || HandleFatalError "Disk device not found: $DISK_DEVICE"
+        
+        # Check if disk is in use
+        if lsblk "$DISK_DEVICE" | grep -q "MOUNTPOINT"; then
+            local mounted_parts=$(lsblk "$DISK_DEVICE" -o NAME,MOUNTPOINT | grep -v "^$DISK_DEVICE" | grep -v "^\s*$" | wc -l)
+            if [[ $mounted_parts -gt 0 ]]; then
+                PrintWarning "Disk $DISK_DEVICE has mounted partitions. Attempting to unmount..."
+                umount -R "${DISK_DEVICE}"* 2>/dev/null || true
+            fi
+        fi
+        
         # Wipe and create GPT with ESP + root + swap
-        sgdisk --zap-all "$DISK_DEVICE"
+        PrintStatus "Wiping disk and creating new partition table"
+        sgdisk --zap-all "$DISK_DEVICE" || HandleFatalError "Failed to wipe disk"
         partprobe "$DISK_DEVICE"
-        sleep 1
-        sgdisk -n 1:0:+300M -t 1:EF00 -c 1:"EFI System" "$DISK_DEVICE"
-        sgdisk -n 2:0:-8G   -t 2:8300 -c 2:"Linux Root" "$DISK_DEVICE"
-        sgdisk -n 3:0:0     -t 3:8200 -c 3:"Linux Swap" "$DISK_DEVICE"
+        sleep 2
+        
+        PrintStatus "Creating EFI System Partition (300MB)"
+        sgdisk -n 1:0:+300M -t 1:EF00 -c 1:"EFI System" "$DISK_DEVICE" || HandleFatalError "Failed to create EFI partition"
+        
+        PrintStatus "Creating Linux Root Partition"
+        sgdisk -n 2:0:-8G -t 2:8300 -c 2:"Linux Root" "$DISK_DEVICE" || HandleFatalError "Failed to create root partition"
+        
+        PrintStatus "Creating Linux Swap Partition (8GB)"
+        sgdisk -n 3:0:0 -t 3:8200 -c 3:"Linux Swap" "$DISK_DEVICE" || HandleFatalError "Failed to create swap partition"
+        
         partprobe "$DISK_DEVICE"
-        sleep 1
-        EFI_PART="${DISK_DEVICE}p1"; ROOT_PART="${DISK_DEVICE}p2"; SWAP_PART="${DISK_DEVICE}p3"
-        [[ -e "$EFI_PART" ]] || EFI_PART="${DISK_DEVICE}1"
-        [[ -e "$ROOT_PART" ]] || ROOT_PART="${DISK_DEVICE}2"
-        [[ -e "$SWAP_PART" ]] || SWAP_PART="${DISK_DEVICE}3"
+        sleep 2
+        
+        # Determine partition naming scheme
+        if [[ "$DISK_DEVICE" =~ nvme ]]; then
+            EFI_PART="${DISK_DEVICE}p1"
+            ROOT_PART="${DISK_DEVICE}p2"
+            SWAP_PART="${DISK_DEVICE}p3"
+        else
+            EFI_PART="${DISK_DEVICE}1"
+            ROOT_PART="${DISK_DEVICE}2"
+            SWAP_PART="${DISK_DEVICE}3"
+        fi
+        
+        # Validate all partitions exist
+        validate_partition_exists "$EFI_PART" "EFI"
+        validate_partition_exists "$ROOT_PART" "Root"
+        validate_partition_exists "$SWAP_PART" "Swap"
     else
         PrintStatus "Setting up for dual-boot (GPT)"
         # Detect ESP and pick/create root partition interactively
@@ -135,39 +188,42 @@ prepare_partitions() {
 format_partitions() {
     PrintStatus "Formatting partitions"
     if [[ "$DUAL_BOOT_MODE" == "new" ]]; then
-        mkfs.fat -F32 "$EFI_PART"
+        PrintStatus "Formatting EFI partition"
+        mkfs.fat -F32 "$EFI_PART" || HandleFatalError "Failed to format EFI partition"
     else
         PrintStatus "Preserving existing EFI System Partition at $EFI_PART"
     fi
-    PrintStatus "Stable policy: using ext4 for root filesystem"
-    mkfs.ext4 -F "$ROOT_PART"
-    if [[ -n "$SWAP_PART" ]]; then mkswap "$SWAP_PART" ; fi
+    
+    # Note: Root filesystem formatting is handled by FilesystemSetup.sh based on $FILESYSTEM variable
+    PrintStatus "Root partition will be formatted by filesystem setup module"
+    
+    if [[ -n "$SWAP_PART" ]]; then 
+        PrintStatus "Creating swap"
+        mkswap "$SWAP_PART" || HandleFatalError "Failed to create swap"
+    fi
 }
 
 mount_partitions() {
     PrintStatus "Mounting partitions"
-    mount "$ROOT_PART" /mnt
-    mkdir -p /mnt/boot
-    if [[ "$DUAL_BOOT_MODE" == "new" ]]; then
-        # Fresh install: mount ESP at /boot (systemd-boot flow)
-        mount "$EFI_PART" /mnt/boot
-    else
-        # Dual-boot: mount ESP at /boot/EFI (GRUB flow keeps /boot on root FS)
-        mkdir -p /mnt/boot/EFI
-        mount "$EFI_PART" /mnt/boot/EFI
+    
+    # Note: Mounting is handled by FilesystemSetup.sh which understands different filesystem types
+    PrintStatus "Partition mounting will be handled by filesystem setup module"
+    
+    # Just activate swap if created
+    if [[ -n "$SWAP_PART" ]]; then 
+        PrintStatus "Activating swap"
+        swapon "$SWAP_PART" || HandleFatalError "Failed to activate swap"
     fi
-    if [[ -n "$SWAP_PART" ]]; then swapon "$SWAP_PART" ; fi
 }
 
 # Entry called by main script
-DiskManagement_setup() {
+disk_management_setup() {
+    PrintHeader "Disk Management"
     select_install_type
     select_disk
     confirm_destructive_action
     prepare_partitions
     format_partitions
     mount_partitions
+    PrintStatus "Disk management completed"
 }
-
-# Backward-compatible lowercase name if main uses that
- disk_management_setup() { DiskManagement_setup "$@"; }

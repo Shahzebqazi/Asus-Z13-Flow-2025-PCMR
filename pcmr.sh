@@ -16,21 +16,25 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Global variables
-# Resolve the directory of this script robustly (works with sourced, exec'd, or piped runs)
+# Resolve script and repository root
 SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 if [[ "$SCRIPT_PATH" == "-" || "$SCRIPT_PATH" == "bash" || "$SCRIPT_PATH" == "/dev/fd"* ]]; then
     SCRIPT_DIR="$(pwd)"
 else
     SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 fi
+SOURCE_DIR="$SCRIPT_DIR"
+# Repo root is one level up from Source when running from Source/pcmr.sh
+REPO_ROOT="$(cd "$SOURCE_DIR/.." 2>/dev/null && pwd)"
 
-# Always resolve modules relative to the script directory
-MODULES_DIR="$SCRIPT_DIR/Modules"
-# Determine a safe input device for interactive reads without disturbing stdin (important for curl|bash)
-if [[ -e /dev/tty ]]; then
+# Paths inside repo
+MODULES_DIR="$SOURCE_DIR/Modules"
+# Determine a safe input device for interactive reads
+# Use /dev/stdin for most reliable input handling
+TTY_INPUT="/dev/stdin"
+# For script execution in different contexts, ensure proper terminal handling
+if [[ -t 0 ]] && [[ -e /dev/tty ]]; then
     TTY_INPUT="/dev/tty"
-else
-    TTY_INPUT="/dev/stdin"
 fi
 
 # Global variables
@@ -625,14 +629,14 @@ OPTIONS:
     --help, -h             Show this help message
 
 EXAMPLES:
-    $0 --config Configs/Zen.json
+    $0 --config "$REPO_ROOT/Configs/Zen.json"
     $0 --standard
     $0 --dual-boot-gpt --zen-kernel
 
 CONFIGURATION:
     The script can load configuration from a file.
     Available configurations:
-    - Configs/Zen.json: Performance gaming setup (stable default)
+    - $REPO_ROOT/Configs/Zen.json: Performance gaming setup (stable default)
 
 DUAL BOOT MODES:
     --dual-boot-gpt        For existing Windows UEFI installations
@@ -658,90 +662,65 @@ For more information, see README.md
 EOF
 }
 
-# Self-bootstrap when Modules/Configs are missing (supports curl|bash usage)
-SelfBootstrapIfNeeded() {
-    # Prevent infinite recursion
-    if [[ -n "$PCMR_BOOTSTRAPPED" ]]; then
-        return 0
-    fi
-
-    local have_modules=false
-    if [[ -f "$MODULES_DIR/DiskManagement.sh" && -f "$SCRIPT_DIR/Configs/Zen.json" ]]; then
-        have_modules=true
-    fi
-
-    if [[ "$have_modules" == false ]]; then
-        PrintWarning "Required repo content not found. Downloading stable branch (modules, configs)..."
-        local tmp_dir
-        tmp_dir="$(mktemp -d -t pcmr.XXXXXX)" || HandleFatalError "Unable to create temp directory for bootstrap"
-        local tarball="$tmp_dir/repo.tar.gz"
-
-        if ! curl -fsSL "https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/archive/refs/heads/stable.tar.gz" -o "$tarball"; then
-            HandleFatalError "Failed to download stable repository tarball"
-        fi
-
-        if ! tar -xzf "$tarball" -C "$tmp_dir" --strip-components=1; then
-            HandleFatalError "Failed to extract repository tarball"
-        fi
-
-        export PCMR_BOOTSTRAPPED=1
-        cd "$tmp_dir" || HandleFatalError "Unable to change directory to bootstrap folder"
-        PrintStatus "Re-executing installer from downloaded repository..."
-        exec bash ./pcmr.sh "$@"
-    fi
-}
+# Removed self-bootstrap complexity
 
 # Function to parse JSON configuration files
 ParseJsonConfig() {
     local config_file="$1"
-    local json_content
     
     if [[ ! -f "$config_file" ]]; then
         HandleFatalError "Configuration file not found: $config_file"
     fi
     
-    # Read JSON content
-    json_content=$(cat "$config_file")
+    # Install jq if not available
+    if ! command -v jq >/dev/null 2>&1; then
+        PrintStatus "Installing jq for JSON parsing..."
+        pacman -Sy --noconfirm jq || HandleFatalError "Failed to install jq"
+    fi
     
-    # Simple JSON parsing using grep and sed (avoiding jq dependency)
+    # Parse JSON using jq with proper error handling
+    if ! jq empty "$config_file" 2>/dev/null; then
+        HandleFatalError "Invalid JSON in configuration file: $config_file"
+    fi
+    
     # Parse system settings
-    USERNAME=$(echo "$json_content" | grep -o '"default_username"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_username"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
-    HOSTNAME=$(echo "$json_content" | grep -o '"default_hostname"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_hostname"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
-    TIMEZONE=$(echo "$json_content" | grep -o '"default_timezone"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_timezone"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    USERNAME=$(jq -r '.system.default_username // ""' "$config_file")
+    HOSTNAME=$(jq -r '.system.default_hostname // ""' "$config_file")
+    TIMEZONE=$(jq -r '.system.default_timezone // ""' "$config_file")
     
     # Parse installation settings
-    DUAL_BOOT_MODE=$(echo "$json_content" | grep -o '"dual_boot_mode"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"dual_boot_mode"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
-    USE_ZEN_KERNEL=$(echo "$json_content" | grep -o '"kernel_variant"[[:space:]]*:[[:space:]]*"zen"' >/dev/null && echo "true" || echo "false")
-    FILESYSTEM=$(echo "$json_content" | grep -o '"default_filesystem"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_filesystem"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
-    DESKTOP_ENVIRONMENT=$(echo "$json_content" | grep -o '"default_desktop"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"default_desktop"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
-    INSTALL_GAMING=$(echo "$json_content" | grep -o '"enable_gaming"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
-    ENABLE_SNAPSHOTS=false
+    DUAL_BOOT_MODE=$(jq -r '.installation.dual_boot_mode // ""' "$config_file")
+    local kernel_variant=$(jq -r '.installation.kernel_variant // ""' "$config_file")
+    USE_ZEN_KERNEL=$([ "$kernel_variant" = "zen" ] && echo "true" || echo "false")
+    FILESYSTEM=$(jq -r '.installation.default_filesystem // "ext4"' "$config_file")
+    DESKTOP_ENVIRONMENT=$(jq -r '.installation.default_desktop // "omarchy"' "$config_file")
+    INSTALL_GAMING=$(jq -r '.installation.enable_gaming // false' "$config_file")
+    ENABLE_SNAPSHOTS=$(jq -r '.installation.enable_snapshots // false' "$config_file")
     
     # Parse power management
-    INSTALL_POWER_MGMT=$(echo "$json_content" | grep -o '"enable_power_management"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    INSTALL_POWER_MGMT=$(jq -r '.power.enable_power_management // true' "$config_file")
     
     # Parse hardware settings
-    ENABLE_HARDWARE_FIXES=$(echo "$json_content" | grep -o '"enable_hardware_fixes"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
-    ENABLE_SECURE_BOOT=$(echo "$json_content" | grep -o '"enable_secure_boot"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    ENABLE_HARDWARE_FIXES=$(jq -r '.hardware.enable_hardware_fixes // true' "$config_file")
+    ENABLE_SECURE_BOOT=$(jq -r '.installation.enable_secure_boot // false' "$config_file")
     
-    # Parse recovery settings
-    ENABLE_ERROR_RECOVERY=$(echo "$json_content" | grep -o '"enable_error_recovery"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
-    ENABLE_FILESYSTEM_FALLBACK=$(echo "$json_content" | grep -o '"enable_filesystem_fallback"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
-    ENABLE_FRESH_REINSTALL=$(echo "$json_content" | grep -o '"enable_fresh_reinstall"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
-    ENABLE_DETACHED_MODE=$(echo "$json_content" | grep -o '"enable_detached_mode"[[:space:]]*:[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+    # Parse recovery settings (simplified)
+    ENABLE_ERROR_RECOVERY="true"
+    ENABLE_FILESYSTEM_FALLBACK="true"
+    ENABLE_FRESH_REINSTALL="true"
     
     # Set defaults for empty values
     USERNAME=${USERNAME:-$DEFAULT_USERNAME}
     HOSTNAME=${HOSTNAME:-$DEFAULT_HOSTNAME}
     TIMEZONE=${TIMEZONE:-$DEFAULT_TIMEZONE}
-    FILESYSTEM="ext4"
+    
     # Enforce omarchy desktop regardless of config
     DESKTOP_ENVIRONMENT="omarchy"
 }
 
 # Function to load default configuration
 LoadDefaultConfig() {
-    local defaults_file="$SCRIPT_DIR/Configs/Zen.json"
+    local defaults_file="$REPO_ROOT/Configs/Zen.json"
     
     if [[ -f "$defaults_file" ]]; then
         PrintStatus "Loading default configuration..."
@@ -779,18 +758,66 @@ DetectDualBoot() {
     if [[ -d /sys/firmware/efi ]]; then
         PrintStatus "System is in UEFI mode"
         
-        # Look for Windows EFI partition
-        local efi_part=$(lsblk -rno NAME,PARTTYPE | grep -i "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" | cut -d' ' -f1)
+        # Enhanced EFI partition detection with better error handling
+        local efi_candidates=()
+        local best_efi_part=""
+        local best_efi_size=0
         
-        if [[ -n "$efi_part" ]]; then
-            PrintStatus "Found existing EFI partition: $efi_part"
-            
-            # Check EFI partition size
-            local efi_size=$(lsblk -b "/dev/$efi_part" | awk 'NR==2 {print $4}' | awk '{print int($1/1024/1024)}')
-            if [[ $efi_size -lt 100 ]]; then
-                HandleFatalError "EFI partition is only ${efi_size}MB. This is too small for dual boot. Please resize EFI partition to at least 100MB before continuing. See: https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small"
+        # Use more robust partition detection
+        if command -v lsblk >/dev/null 2>&1; then
+            while IFS= read -r line; do
+                local part_name=$(echo "$line" | awk '{print $1}')
+                local part_type=$(echo "$line" | awk '{print $2}')
+                # Check for EFI System Partition GUID (case insensitive)
+                if [[ "$part_type" =~ ^[cC]12[aA]7328-[fF]81[fF]-11[dD]2-[bB][aA]4[bB]-00[aA]0[cC]93[eE][cC]93[bB]$ ]]; then
+                    efi_candidates+=("$part_name")
+                fi
+            done < <(lsblk -rno NAME,PARTTYPE 2>/dev/null || true)
+        fi
+        
+        # Fallback detection using fdisk if lsblk fails
+        if [[ ${#efi_candidates[@]} -eq 0 ]] && command -v fdisk >/dev/null 2>&1; then
+            PrintStatus "Fallback: Using fdisk for EFI partition detection"
+            while IFS= read -r disk; do
+                if [[ -b "$disk" ]]; then
+                    while IFS= read -r line; do
+                        if echo "$line" | grep -qi "EFI System"; then
+                            local part_num=$(echo "$line" | awk '{print $1}')
+                            efi_candidates+=("${disk}${part_num}")
+                        fi
+                    done < <(fdisk -l "$disk" 2>/dev/null | grep "^/dev" || true)
+                fi
+            done < <(lsblk -rno NAME,TYPE | awk '$2=="disk"{print "/dev/"$1}' || true)
+        fi
+        
+        # Find the best EFI partition (largest with sufficient space)
+        for efi_part in "${efi_candidates[@]}"; do
+            if [[ -b "/dev/$efi_part" ]]; then
+                local efi_size=$(lsblk -b "/dev/$efi_part" -o SIZE --noheadings | head -1)
+                local efi_size_mb=$((efi_size / 1024 / 1024))
+                
+                if [[ $efi_size_mb -ge 100 && $efi_size_mb -gt $best_efi_size ]]; then
+                    best_efi_part="$efi_part"
+                    best_efi_size=$efi_size_mb
+                fi
             fi
-            
+        done
+        
+        if [[ -n "$best_efi_part" ]]; then
+            PrintStatus "Found suitable EFI partition: $best_efi_part (${best_efi_size}MB)"
+            EFI_PART="/dev/$best_efi_part"
+        elif [[ ${#efi_candidates[@]} -gt 0 ]]; then
+            # Found EFI partitions but all too small
+            local first_efi="${efi_candidates[0]}"
+            local first_size=$(lsblk -b "/dev/$first_efi" -o SIZE --noheadings | head -1)
+            local first_size_mb=$((first_size / 1024 / 1024))
+            HandleFatalError "EFI partition $first_efi is only ${first_size_mb}MB. This is too small for dual boot. Please resize EFI partition to at least 100MB before continuing. See: https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small"
+        else
+            PrintStatus "No EFI partition found, using --dual-boot-new mode"
+            DUAL_BOOT_MODE="new"
+        fi
+        
+        if [[ -n "$best_efi_part" ]]; then
             # Check if Windows is installed
             local windows_part=$(lsblk -rno NAME,FSTYPE | grep -i "ntfs" | head -1 | cut -d' ' -f1)
             
@@ -801,9 +828,6 @@ DetectDualBoot() {
                 PrintStatus "No Windows found, using --dual-boot-new mode"
                 DUAL_BOOT_MODE="new"
             fi
-        else
-            PrintStatus "No EFI partition found, using --dual-boot-new mode"
-            DUAL_BOOT_MODE="new"
         fi
     else
         HandleFatalError "System is not in UEFI mode. Z13 Flow 2025 requires UEFI mode. Please boot in UEFI mode and try again."
@@ -879,263 +903,65 @@ ValidatePrerequisites() {
     PrintStatus "Prerequisites validated successfully"
 }
 
-# Function to offer recovery options
+# Simplified error handling - just cleanup and exit
 OfferRecoveryOptions() {
     local failure_phase="$1"
     local error_message="$2"
     
     PrintError "Installation failed at phase: $failure_phase"
     PrintError "Error: $error_message"
+    PrintStatus "Performing cleanup..."
     
-    if [[ "$ENABLE_FRESH_REINSTALL" == "true" ]]; then
-        echo ""
-        PrintStatus "Recovery Options:"
-        echo "1) Clean up and restart fresh installation"
-        echo "2) Try to repair and continue from current phase"
-        echo "3) Clean up and exit (manual recovery)"
-        echo ""
-        
-        read -p "Choose recovery option (1-3): " recovery_choice < "$TTY_INPUT" || true
-        
-        case "$recovery_choice" in
-            1)
-                PrintStatus "Starting fresh reinstall..."
-                PerformFullCleanup
-                ResetInstallationState
-                RestartInstallation
-                ;;
-            2)
-                if [[ "$RETRY_COUNT" -lt "$MAX_RETRY_ATTEMPTS" ]]; then
-                    PrintStatus "Attempting repair and retry..."
-                    ((RETRY_COUNT++))
-                    PerformPartialCleanup
-                    return 0  # Continue installation
-                else
-                    PrintError "Maximum retry attempts reached. Switching to fresh reinstall."
-                    PerformFullCleanup
-                    ResetInstallationState
-                    RestartInstallation
-                fi
-                ;;
-            3)
-                PrintStatus "Performing cleanup and exiting..."
-                PerformFullCleanup
-                exit 1
-                ;;
-            *)
-                PrintWarning "Invalid choice. Defaulting to fresh reinstall."
-                PerformFullCleanup
-                ResetInstallationState
-                RestartInstallation
-                ;;
-        esac
-    else
-        PerformFullCleanup
-        exit 1
-    fi
+    SimpleCleanup
+    exit 1
 }
 
-# Function to perform full cleanup for fresh reinstall
-PerformFullCleanup() {
-    PrintStatus "Performing comprehensive cleanup..."
+# Simplified cleanup function
+SimpleCleanup() {
+    PrintStatus "Performing cleanup..."
     
-    # Unmount filesystems with timeout
-    timeout "$CLEANUP_TIMEOUT" umount -R /mnt 2>/dev/null || {
-        PrintWarning "Forced unmount due to timeout"
-        umount -l /mnt 2>/dev/null || true
-    }
+    # Unmount filesystems 
+    umount -R /mnt 2>/dev/null || umount -l /mnt 2>/dev/null || true
     
     # Destroy ZFS pool if created
     if [[ "$FILESYSTEM_CREATED" == "zfs" ]]; then
         zpool destroy -f zroot 2>/dev/null || true
-        PrintStatus "ZFS pool destroyed"
-    fi
-    
-    # Remove Btrfs subvolumes if created
-    if [[ "$FILESYSTEM_CREATED" == "btrfs" ]]; then
-        btrfs subvolume delete /mnt/@ 2>/dev/null || true
-        btrfs subvolume delete /mnt/@home 2>/dev/null || true
-        btrfs subvolume delete /mnt/@var 2>/dev/null || true
-        btrfs subvolume delete /mnt/@snapshots 2>/dev/null || true
-        PrintStatus "Btrfs subvolumes removed"
-    fi
-    
-    # Clean up any partial package installations
-    if [[ -d "/mnt/var/lib/pacman" ]]; then
-        rm -rf /mnt/var/lib/pacman/db.lck 2>/dev/null || true
-        PrintStatus "Package manager lock files removed"
     fi
     
     # Reset swap if activated
-    if [[ -n "$SWAP_PART" ]] && swapon --show | grep -q "$SWAP_PART"; then
+    if [[ -n "$SWAP_PART" ]]; then
         swapoff "$SWAP_PART" 2>/dev/null || true
-        PrintStatus "Swap deactivated"
     fi
     
-    PrintStatus "Full cleanup completed"
+    PrintStatus "Cleanup completed"
 }
 
-# Function to perform partial cleanup for retry
-PerformPartialCleanup() {
-    PrintStatus "Performing partial cleanup for retry..."
-    
-    # Only unmount and reset current phase state
-    umount -R /mnt 2>/dev/null || true
-    
-    # Reset filesystem state but keep partitions
-    FILESYSTEM_CREATED=""
-    CURRENT_FILESYSTEM=""
-    
-    PrintStatus "Partial cleanup completed"
-}
+# Removed complex restart and retry logic - keep it simple
 
-# Function to reset installation state
-ResetInstallationState() {
-    INSTALLATION_STARTED=false
-    BASE_SYSTEM_INSTALLED=false
-    INSTALLATION_PHASE=""
-    RETRY_COUNT=0
-    FILESYSTEM_CREATED=""
-    CURRENT_FILESYSTEM=""
-    
-    # Reset partition variables but keep disk selection
-    ROOT_PART=""
-    SWAP_PART=""
-    # Keep EFI_PART and DISK_DEVICE for consistency
-    
-    PrintStatus "Installation state reset"
-}
-
-# Function to restart installation
-RestartInstallation() {
-    PrintStatus "Restarting installation process..."
-    
-    # Offer to change configuration
-    echo ""
-    read -p "Would you like to use a different configuration? (y/n): " change_config < "$TTY_INPUT" || true
-    
-    if [[ "$change_config" =~ ^[Yy] ]]; then
-        echo "Available configurations:"
-        echo "1) Zen.json (stable default)"
-        echo "2) Keep current configuration"
-        
-        read -p "Choose configuration (1-2): " config_choice < "$TTY_INPUT" || true
-        
-        case "$config_choice" in
-            1) LoadConfig "$SCRIPT_DIR/Configs/Zen.json" ;;
-            2) PrintStatus "Keeping current configuration" ;;
-            *) PrintWarning "Invalid choice, keeping current configuration" ;;
-        esac
-    fi
-    
-    # Restart from disk management phase
-    INSTALLATION_PHASE="disk_management"
-    INSTALLATION_STARTED=true
-    
-    # Re-run the main installation logic
-    CoreInstallation
-}
-
-# Enhanced cleanup on failure with recovery options
+# Simplified cleanup on failure
 CleanupOnFailure() {
     local err_code=$?
     PrintError "Exit code: ${err_code}"
     PrintError "Last command: ${BASH_COMMAND}"
     if [[ "$INSTALLATION_STARTED" == true ]]; then
-        OfferRecoveryOptions "$INSTALLATION_PHASE" "Installation script terminated unexpectedly"
+        PrintError "Installation failed at phase: ${INSTALLATION_PHASE:-unknown}"
+        SimpleCleanup
     fi
+    exit 1
 }
 
-# Function to enable detached installation mode
-EnableDetachedMode() {
-    if [[ "$ENABLE_DETACHED_MODE" != "true" ]]; then
-        PrintWarning "Detached mode is not enabled in configuration"
-        return 1
-    fi
-    
-    PrintStatus "Enabling detached installation mode..."
-    PrintStatus "You can now safely detach from this session."
-    PrintStatus "The installation will continue in the background."
-    echo ""
-    PrintStatus "To reattach later, use: screen -r pcmr-install"
-    PrintStatus "To check progress, use: tail -f /tmp/pcmr-install.log"
-    echo ""
-    
-    # Ensure 'screen' is available
-    if ! command -v screen >/dev/null 2>&1; then
-        PrintWarning "Detached mode requires 'screen', which is not available in this environment. Skipping detach."
-        return 1
-    fi
-
-    # Start screen session for detached mode
-    screen -dmS pcmr-install bash -c "
-        # Redirect all output to log file
-        exec > >(tee -a /tmp/pcmr-install.log)
-        exec 2>&1
-        
-        # Continue installation
-        DETACHED_MODE=true
-        CoreInstallation
-    "
-    
-    DETACHED_PID=$(screen -list | grep pcmr-install | awk '{print $1}' | cut -d. -f1)
-    
-    if [[ -n "$DETACHED_PID" ]]; then
-        PrintStatus "Installation detached successfully (PID: $DETACHED_PID)"
-        PrintStatus "Session name: pcmr-install"
-        echo ""
-        PrintStatus "Commands to manage detached installation:"
-        echo "  Reattach:     screen -r pcmr-install"
-        echo "  Check status: tail -f /tmp/pcmr-install.log"
-        echo "  Kill session: screen -S pcmr-install -X quit"
-        echo ""
-        exit 0
-    else
-        PrintError "Failed to start detached session"
-        return 1
-    fi
-}
-
-# Function to check if running in detached mode
-IsDetachedMode() {
-    [[ "$DETACHED_MODE" == "true" ]] || [[ -n "$STY" ]]
-}
-
-# Function to offer detach option during installation
-OfferDetachOption() {
-    local phase="$1"
-    
-    if [[ "$ENABLE_DETACHED_MODE" == "true" ]] && [[ "$DETACHED_MODE" != "true" ]]; then
-        echo ""
-        PrintStatus "Current phase: $phase"
-        PrintStatus "You can detach from this installation to do other tasks."
-        echo ""
-        read -p "Would you like to detach now? (y/n): " detach_choice < "$TTY_INPUT" || true
-        
-        if [[ "$detach_choice" =~ ^[Yy] ]]; then
-            EnableDetachedMode
-        fi
-    fi
-}
+# Removed detached mode complexity - not needed for simple installation
 
 # Function to cleanup and finish
 CleanupAndFinish() {
     PrintHeader "Finalizing Installation"
     
     # Unmount filesystems
-    umount -R /mnt
+    umount -R /mnt 2>/dev/null || true
     
     PrintStatus "Installation completed successfully!"
     PrintStatus "You can now reboot into your new Arch Linux installation"
     PrintStatus "Remember to remove the installation media before rebooting"
-    
-    # If in detached mode, provide reattach instructions
-    if IsDetachedMode; then
-        echo ""
-        PrintStatus "Installation completed in detached mode."
-        PrintStatus "You can now safely exit this screen session."
-        PrintStatus "Use 'screen -S pcmr-install -X quit' to close this session."
-    fi
 }
 
 # Main function
@@ -1143,7 +969,7 @@ Main() {
     # Set up error handling
     trap CleanupOnFailure ERR
     
-    # Enforce device guard early: AMD Ryzen Strix Halo only
+    # Enforce device guard: AMD systems (with preference for Strix Halo)
     local cpu_info=""
     if command -v lscpu >/dev/null 2>&1; then
         cpu_info=$(lscpu 2>/dev/null | tr '[:upper:]' '[:lower:]')
@@ -1151,16 +977,27 @@ Main() {
         cpu_info=$(cat /proc/cpuinfo 2>/dev/null | tr '[:upper:]' '[:lower:]')
     fi
     if [[ -z "$cpu_info" ]]; then
-        HandleFatalError "Unable to detect CPU information. This installer is restricted to AMD Ryzen Strix Halo platforms."
+        PrintWarning "Unable to detect CPU information. Proceeding with installation."
+    else
+        # Check for AMD processors
+        if echo "$cpu_info" | grep -q "amd"; then
+            # Check for Strix Halo specifically
+            if echo "$cpu_info" | grep -Eiq "strix[[:space:]-]?halo|ryzen[[:space:]]*ai[[:space:]]*max|395|8060s"; then
+                PrintStatus "Detected AMD Strix Halo platform - optimal compatibility"
+            else
+                PrintStatus "Detected AMD platform - good compatibility expected"
+            fi
+        else
+            PrintWarning "Non-AMD processor detected. This installer is optimized for AMD systems, particularly Strix Halo. Proceeding but some features may not work correctly."
+        fi
     fi
-    # Require AMD and either explicit Strix Halo mention or Ryzen AI 395 identifier
-    if ! echo "$cpu_info" | grep -q "amd" || ! echo "$cpu_info" | grep -Eiq "strix[[:space:]-]?halo|ryzen[[:space:]]*ai|\b395\b"; then
-        HandleFatalError "Unsupported device/CPU. This installer is restricted to AMD Ryzen Strix Halo platforms."
-    fi
+    
     # Soft GPU presence check (non-fatal)
     if command -v lspci >/dev/null 2>&1; then
-        if ! lspci | tr '[:upper:]' '[:lower:]' | grep -Eiq "amdgpu|advanced micro devices|amd.*graphics"; then
-            PrintWarning "AMDGPU device not detected. Proceeding due to CPU match, but installation may fail."
+        if lspci | tr '[:upper:]' '[:lower:]' | grep -Eiq "amdgpu|advanced micro devices|amd.*graphics"; then
+            PrintStatus "AMD GPU detected"
+        else
+            PrintWarning "AMD GPU not detected. Some hardware optimizations may not apply."
         fi
     fi
     
@@ -1213,7 +1050,7 @@ Main() {
     # Load configuration if requested
     if [[ "$use_config" == true ]]; then
         if [[ -z "$config_file" ]]; then
-            config_file="Configs/Zen.json"
+            config_file="$REPO_ROOT/Configs/Zen.json"
         fi
         LoadConfig "$config_file"
     else
@@ -1244,8 +1081,10 @@ Main() {
     # Validate prerequisites
     ValidatePrerequisites
 
-    # Ensure full repository content is available when run via curl|bash (before any prompts)
-    SelfBootstrapIfNeeded "$@"
+    # Ensure required modules are available
+    if [[ ! -f "$MODULES_DIR/DiskManagement.sh" ]]; then
+        HandleFatalError "Required modules not found. Please run this script from the repository root or ensure modules are available."
+    fi
 
     # Show installation summary
     ShowSummary
@@ -1256,10 +1095,7 @@ Main() {
     INSTALLATION_STARTED=true
     INSTALLATION_PHASE="initialization"
     
-    # Offer detach option before starting intensive operations
-    if [[ "$ENABLE_DETACHED_MODE" == "true" ]]; then
-        OfferDetachOption "Pre-Installation Setup"
-    fi
+    # Removed detached mode offer
     
     # Load TUI display system (unless disabled)
     if [[ "$FORCE_NO_TUI" == true ]]; then

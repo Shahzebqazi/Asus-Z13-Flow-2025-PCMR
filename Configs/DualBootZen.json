@@ -1,24 +1,24 @@
 {
   "metadata": {
-    "name": "Fresh Install - Zen Kernel",
-    "description": "Fresh single-boot install with Zen kernel and full features",
-    "author": "PCMR",
+    "name": "Dual Boot Zen Kernel Configuration",
+    "description": "Dual-boot setup with existing Windows using Zen kernel and ZFS",
+    "author": "sqazi",
     "version": "1.0.0"
   },
   "system": {
     "default_username": "",
     "default_hostname": "arch-z13",
-    "default_timezone": "UTC",
+    "default_timezone": "",
     "locale": "en_US.UTF-8"
   },
   "installation": {
-    "dual_boot_mode": "none",
+    "dual_boot_mode": "gpt",
     "kernel_variant": "zen",
     "default_filesystem": "zfs",
     "default_desktop": "omarchy",
     "enable_gaming": true,
     "enable_snapshots": true,
-    "enable_secure_boot": true,
+    "enable_secure_boot": false,
     "enable_suspend_resume": true,
     "enable_hibernate": true
   },
@@ -52,4 +52,3 @@
     "enable_detached_mode": true
   }
 }
-

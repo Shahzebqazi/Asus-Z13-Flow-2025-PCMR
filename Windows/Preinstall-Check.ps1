@@ -56,6 +56,25 @@ function Test-FastStartupEnabled {
     } catch { return $false }
 }
 
+function Test-UnallocatedSpace([Microsoft.Management.Infrastructure.CimInstance]$Disk, [int]$RequiredMiB) {
+    try {
+        $unallocated = Get-Disk -Number $Disk.Number | Get-PartitionSupportedSize
+        $availableMiB = [math]::Round(($unallocated.SizeMax - $unallocated.SizeMin) / 1MB)
+        return $availableMiB -ge $RequiredMiB
+    } catch {
+        return $false
+    }
+}
+
+function Test-DiskHealth([Microsoft.Management.Infrastructure.CimInstance]$Disk) {
+    try {
+        $health = Get-Disk -Number $Disk.Number | Select-Object -ExpandProperty HealthStatus
+        return $health -eq 'Healthy'
+    } catch {
+        return $false
+    }
+}
+
 function Main {
     $fail = @()
     $warn = @()
@@ -66,6 +85,16 @@ function Main {
     try { $disk = Get-OsDisk } catch { $fail += $_.Exception.Message }
     if ($disk) {
         if ($disk.PartitionStyle -ne 'GPT') { $fail += 'OS disk must be GPT for UEFI.' }
+        
+        # Check disk health
+        if (-not (Test-DiskHealth -Disk $disk)) { 
+            $warn += 'Disk health status is not optimal. Check disk integrity before proceeding.' 
+        }
+        
+        # Check for sufficient unallocated space for Arch installation (minimum 25GB)
+        if (-not (Test-UnallocatedSpace -Disk $disk -RequiredMiB 25600)) {
+            $warn += 'Insufficient unallocated space for Arch Linux installation (need ~25GB). Consider shrinking partitions.'
+        }
     }
 
     # BitLocker

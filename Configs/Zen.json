@@ -14,10 +14,10 @@
   "installation": {
     "dual_boot_mode": "none",
     "kernel_variant": "zen",
-    "default_filesystem": "ext4",
+    "default_filesystem": "zfs",
     "default_desktop": "omarchy",
     "enable_gaming": true,
-    "enable_snapshots": false,
+    "enable_snapshots": true,
     "enable_secure_boot": true,
     "enable_suspend_resume": true,
     "enable_hibernate": true

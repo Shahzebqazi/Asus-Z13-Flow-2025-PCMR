@@ -239,16 +239,47 @@ cat /sys/class/drm/card*/device/pp_features
 
 **Power/TDP management:** Development-only dynamic TDP services are not part of stable.
 
-**Custom TDP profiles not saving:**
+**ZFS pool import issues after reboot:**
 ```bash
-# Check profile directory permissions
-ls -la /etc/z13/
+# Check ZFS pool status
+sudo zpool status
 
-# Manually create profile
-sudo z13-tdp create test_profile 60 15 "Test profile"
+# Import pool manually if needed
+sudo zpool import -f zroot
 
-# List all profiles
-z13-tdp list
+# Enable ZFS services if not already enabled
+sudo systemctl enable zfs-import-cache.service
+sudo systemctl enable zfs-mount.service
+sudo systemctl enable zfs-import.target
+```
+
+**AMD Strix Halo GPU not detected:**
+```bash
+# Check if amdgpu module is loaded
+lsmod | grep amdgpu
+
+# Check GPU detection
+lspci | grep -i amd
+lspci | grep -i vga
+
+# Force load amdgpu module
+sudo modprobe amdgpu
+
+# Check dmesg for GPU initialization
+dmesg | grep -i amdgpu
+```
+
+**Dual-boot Windows entry missing:**
+```bash
+# For GRUB systems
+sudo os-prober
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+
+# Check if Windows EFI entry exists
+sudo efibootmgr -v
+
+# Manually add Windows entry if needed
+sudo efibootmgr -c -d /dev/nvme0n1 -p 1 -L "Windows Boot Manager" -l "\\EFI\\Microsoft\\Boot\\bootmgfw.efi"
 ```
 
 ## 🤝 **Community & Support**
@@ -309,13 +340,16 @@ Run in an elevated PowerShell in Windows (Administrator):
 ```powershell
 cd C:\path\to\repo\Windows
 
-# 1) Preinstall checks (non-destructive):
+# 1) Preinstall checks (enhanced with disk health and space validation):
 PowerShell -ExecutionPolicy Bypass -File .\Preinstall-Check.ps1
 
-# 2) Ensure ESP is large enough (safe: creates new ESP; does not move the original):
+# 2) Create Linux partitions from unallocated space:
+PowerShell -ExecutionPolicy Bypass -File .\Create-Partitions.ps1 -DiskNumber 0 -RootSizeGB 50 -SwapSizeGB 8
+
+# 3) Ensure ESP is large enough (safe: creates new ESP; does not move the original):
 PowerShell -ExecutionPolicy Bypass -File .\Ensure-ESP.ps1 -MinEspMiB 260 -NewEspMiB 300 -ShrinkOsMiB 512
 
-# 3) Make Arch USB with Rufus (GUI):
+# 4) Make Arch USB with Rufus (GUI):
 PowerShell -ExecutionPolicy Bypass -File .\Make-Arch-USB.ps1 -RufusPath C:\Tools\rufus.exe -ISOPath C:\Users\you\Downloads\archlinux.iso
 
 # Or run the orchestrator to do checks + ESP + optional USB:

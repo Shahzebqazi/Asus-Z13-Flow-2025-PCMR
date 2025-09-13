@@ -30,5 +30,5 @@ Purpose: Provide agents and contributors the minimal context to work safely on t
 - When adding modules, start in development; backport safe subsets to stable.
 
 ## Quick Pointers
-- Windows prep helper: `Windows/Create-Arch-USB.ps1` (ESP creation via bcdboot; no ESP moves).
+- Windows prep helper: `Source/Windows/Create-Arch-USB.ps1` (ESP creation via bcdboot; no ESP moves).
 - HWE toggles via `ENABLE_HARDWARE_FIXES` in config parsing.

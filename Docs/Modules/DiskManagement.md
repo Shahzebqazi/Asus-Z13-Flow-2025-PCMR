@@ -15,5 +15,5 @@ Entry points:
 - `disk_management_setup` (lowercase alias)
 
 Notes:
-- Requires UEFI/GPT. For dual‑boot, prepare Windows first using `Docs/Windows/Ensure-ESP.md` and scripts under `Windows/`.
+- Requires UEFI/GPT. For dual‑boot, prepare Windows first using `Docs/Windows/Ensure-ESP.md` and scripts under `Source/Windows/`.
 

@@ -52,6 +52,22 @@ PowerShell -ExecutionPolicy Bypass -File .\Preflight-Checklist.ps1 -MinEspMiB 30
 - **0**: All checks passed (may have warnings)
 - **1**: Critical failures detected (must be resolved before proceeding)
 
+## Recent Bug Fixes (Latest Version)
+
+### ✅ Fixed Unallocated Space Detection
+**Previous Issue**: Script incorrectly reported "Insufficient unallocated space" even when sufficient space existed
+**Fix**: Rewrote detection logic to calculate actual unallocated space by:
+- Enumerating all partitions and calculating total allocated space
+- Computing actual unallocated space as `disk_size - total_allocated`
+- Providing detailed disk space breakdown for debugging
+
+### ✅ Fixed Fast Startup Detection
+**Previous Issue**: Unreliable Fast Startup status detection
+**Fix**: Implemented robust detection using:
+- Primary method: Windows registry key `HiberbootEnabled`
+- Fallback method: `powercfg /a` hibernation status check
+- Enhanced error handling with informative messages
+
 ## Common Issues and Solutions
 
 ### BitLocker Enabled

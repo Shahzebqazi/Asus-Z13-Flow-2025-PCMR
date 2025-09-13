@@ -71,7 +71,11 @@ tail -f /var/log/pcmr-installer.log
 - **Boot**: systemd-boot (fresh install) or GRUB (dual-boot)
 - **Security**: Secure Boot enabled for fresh installs, disabled for dual-boot compatibility
 
-**Recent Stability Improvements (v2.0.3):**
+**Recent Stability Improvements (v2.0.4):**
+- 🔴 **CRITICAL FIX**: Fixed PowerShell preflight script unallocated space detection bug
+- 🔴 **CRITICAL FIX**: Fixed PowerShell preflight script Fast Startup detection reliability
+- ✅ Enhanced PowerShell error handling with informative messages
+- ✅ Improved disk space calculation accuracy for dual-boot preparation
 - 🔴 **CRITICAL FIX**: Resolved major inconsistency between main script and Source directory
 - 🔴 **CRITICAL FIX**: Fixed ZFS configuration mismatch causing unexpected filesystem fallback
 - 🔴 **CRITICAL FIX**: Added missing function dependencies in Source modules

@@ -76,7 +76,7 @@ I've conducted a thorough code review and systematic improvement of your Arch Li
   - Rate control algorithm specification
 - Added AMD GPU-specific module parameters for optimal performance
 
-**Robust pcmr.sh (Main Script):**
+**Robust Install_Arch.sh (Main Script):**
 - Enhanced EFI partition detection with multiple fallback methods
 - Case-insensitive GUID matching for better compatibility
 - Improved dual-boot detection logic with fdisk fallback

@@ -11,5 +11,5 @@ Inputs:
 - `USE_ZEN_KERNEL`, `USERNAME`, `HOSTNAME`, `TIMEZONE`, `DEFAULT_LOCALE`
 
 Notes:
-- Passwords are set non‑interactively if captured earlier by `pcmr.sh`.
+- Passwords are set non‑interactively if captured earlier by `Install_Arch.sh`.
 

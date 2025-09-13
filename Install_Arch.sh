@@ -1,5 +1,5 @@
 #!/bin/bash
-# PCMR Arch Linux Installation Script
+# Arch Linux Installation Script for ASUS ROG Flow Z13 (2025)
 # ASUS ROG Flow Z13 (2025) - AMD Strix Halo AI Max+
 # Author: sqazi
 # Version: 2.0.0
@@ -24,7 +24,7 @@ else
     SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 fi
 SOURCE_DIR="$SCRIPT_DIR"
-# Repo root is one level up from Source when running from Source/pcmr.sh
+# Repo root is one level up from Source when running from Source/Install_Arch.sh
 REPO_ROOT="$(cd "$SOURCE_DIR/.." 2>/dev/null && pwd)"
 
 # Paths inside repo
@@ -40,8 +40,8 @@ fi
 # Global variables
 INSTALLATION_STARTED=false
 BASE_SYSTEM_INSTALLED=false
-STATE_HOST_FILE="/tmp/pcmr-installer.state"
-STATE_DIR="/mnt/var/lib/pcmr-installer"
+STATE_HOST_FILE="/tmp/arch-installer.state"
+STATE_DIR="/mnt/var/lib/arch-installer"
 STATE_FILE="$STATE_DIR/state"
 
 # Default configuration
@@ -117,7 +117,7 @@ HandleFatalError() {
     local error_msg="$1"
     PrintError "$error_msg"
     # Log to system log if available
-    logger -t "pcmr-installer" "FATAL: $error_msg" 2>/dev/null || true
+    logger -t "arch-installer" "FATAL: $error_msg" 2>/dev/null || true
     exit 1
 }
 
@@ -125,7 +125,7 @@ HandleRecoverableError() {
     local error_msg="$1"
     PrintError "$error_msg"
     # Log to system log if available  
-    logger -t "pcmr-installer" "RECOVERABLE: $error_msg" 2>/dev/null || true
+    logger -t "arch-installer" "RECOVERABLE: $error_msg" 2>/dev/null || true
     return 1
 }
 
@@ -133,7 +133,7 @@ HandleValidationError() {
     local error_msg="$1"
     PrintError "$error_msg"
     # Log to system log if available
-    logger -t "pcmr-installer" "VALIDATION: $error_msg" 2>/dev/null || true
+    logger -t "arch-installer" "VALIDATION: $error_msg" 2>/dev/null || true
     exit 1
 }
 
@@ -613,8 +613,8 @@ SetPasswordsNonInteractive() {
 # Function to show help
 ShowHelp() {
     cat << EOF
-PCMR Arch Linux Installation Script
-ASUS ROG Flow Z13 (2025) - AMD Strix Halo AI Max+
+Arch Linux Installation Script for ASUS ROG Flow Z13 (2025)
+AMD Strix Halo AI Max+ Optimized
 
 USAGE:
     $0 [OPTIONS]
@@ -965,8 +965,8 @@ HandleNetworkInstall() {
     PrintStatus "Downloading latest stable installer..."
     
     # Download latest version
-    local temp_script="/tmp/pcmr-latest.sh"
-    if curl -L "https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh" -o "$temp_script"; then
+    local temp_script="/tmp/Install_Arch-latest.sh"
+    if curl -L "https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/Install_Arch.sh" -o "$temp_script"; then
         chmod +x "$temp_script"
         PrintStatus "Latest installer downloaded successfully"
         PrintStatus "Executing latest version..."
@@ -1308,7 +1308,7 @@ Main() {
     
     # Run installation sequence
     if [[ "$TUI_ENABLED" == true ]]; then
-        add_log_message "Starting PCMR Arch Linux Installation"
+        add_log_message "Starting Arch Linux Installation for Z13 Flow 2025"
         add_log_message "Configuration: ${DUAL_BOOT_MODE:-Auto} | $([ "$USE_ZEN_KERNEL" == true ] && echo "Zen" || echo "Standard") kernel"
         add_log_message "Filesystem: $FILESYSTEM | Desktop: $DESKTOP_ENVIRONMENT"
     fi

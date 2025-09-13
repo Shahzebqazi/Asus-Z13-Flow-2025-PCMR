@@ -8,7 +8,7 @@ Purpose: Provide agents and contributors the minimal context to work safely on t
 - development: full engineering work, CI, advanced modules, experiments.
 
 ## Installer Facts (stable)
-- Entry: `pcmr.sh` (bash).
+- Entry: `Install_Arch.sh` (bash).
 - Core modules loaded: `DiskManagement`, `FilesystemSetup`, `CoreInstallation`, `Bootloader`.
 - Optional module: `HardwareEnablement` (asusctl/supergfxctl, MT7925e ASPM fix, backlight param, PipeWire).
 - Configs: single stable config `Configs/Zen.json`. Desktop forced to `omarchy`.

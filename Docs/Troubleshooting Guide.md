@@ -264,7 +264,7 @@ python3 -m json.tool Configs/Zen.json
 # - Missing brackets
 
 # Use default configuration
-./pcmr.sh --standard
+./Install_Arch.sh --standard
 ```
 
 ### Issue: Module Loading Failures

@@ -1,6 +1,16 @@
 # User Guide — Arch Linux on ASUS ROG Flow Z13 (2025)
 
-This guide is for Z13 Flow (2025) with AMD Ryzen Strix Halo. It focuses on the fastest, safest path with minimal choices. Developer/agent details live in `Docs/Prompt.md`.
+This guide is for Z13 Flow (2025) with AMD Ryzen Strix Halo. It focuses on the fastest, safest path with minimal choices.
+
+## Current Stable Branch Configuration
+
+The stable branch currently installs:
+- **Zen kernel** - Performance-optimized kernel for gaming and responsiveness
+- **ZFS filesystem** - Advanced filesystem with compression and snapshots
+- **Dual-boot support** - Compatible with existing Windows installations
+- **systemd-boot** - For fresh installs on new SSDs
+- **GRUB** - For dual-boot configurations with Windows
+- **omarchy desktop** - Lightweight, efficient desktop environment
 
 ## Quick Start (Recommended)
 
@@ -26,19 +36,30 @@ If you prefer an explicit config instead of defaults:
 ./pcmr.sh --config Configs/Zen.json
 ```
 
-## Dual‑Boot Prep on Windows (Recommended)
+## Dual‑Boot Prep on Windows (Enhanced)
 
-Before installing alongside Windows, prepare safely with the helper script:
+Before installing alongside Windows, prepare safely with the enhanced helper scripts:
 
 ```powershell
 # Run in Windows PowerShell as Administrator
 cd C:\path\to\repo\Windows
-PowerShell -ExecutionPolicy Bypass -File .\Create-Arch-USB.ps1 -BackupTargetDriveLetter E: -MinEspMiB 260 -NewEspMiB 300
+
+# 1) Check system health and space
+PowerShell -ExecutionPolicy Bypass -File .\Preinstall-Check.ps1
+
+# 2) Create Linux partitions from unallocated space
+PowerShell -ExecutionPolicy Bypass -File .\Create-Partitions.ps1 -DiskNumber 0 -RootSizeGB 50 -SwapSizeGB 8
+
+# 3) Ensure proper EFI System Partition size
+PowerShell -ExecutionPolicy Bypass -File .\Ensure-ESP.ps1 -MinEspMiB 260 -NewEspMiB 300
 ```
 
-What it does:
-- Creates a restore point (and optional system image backup)
-- Ensures a properly sized EFI System Partition without touching the original ESP
+What the enhanced scripts do:
+- Validate disk health and available space
+- Create Linux partitions automatically from unallocated space
+- Create restore points and optional system image backups
+- Ensure properly sized EFI System Partition without touching the original ESP
+- Provide comprehensive error recovery and rollback capabilities
 
 Reference: Arch Wiki guidance on Windows ESP sizing.
 
@@ -77,50 +98,28 @@ tdp          # Manage profiles
 
 For all troubleshooting, see the consolidated guide:
 
-- `Docs/Troubleshooting Guide.md`
+- [Troubleshooting Guide](Troubleshooting%20Guide.md)
 
 ## Secure Boot Policy (summary)
 
 - Fresh/Linux‑only installs: systemd‑boot + `sbctl` with key creation and signing.
 - Existing Windows dual‑boot: GRUB UEFI with `os-prober`; Secure Boot disabled to preserve Windows boot.
 
-For developer notes, see `Docs/Prompt.md`.
-
 ## Extended Troubleshooting
 
-See `Docs/Troubleshooting Guide.md` for detailed commands and fixes.
+See [Troubleshooting Guide](Troubleshooting%20Guide.md) for detailed commands and fixes.
 
-## Advanced Configuration (essentials)
+## Advanced Configuration
 
-- Use a JSON profile to preconfigure install:
-```bash
-cp Configs/Zen.json Configs/MyCustom.json
-# edit MyCustom.json, then
-./pcmr.sh --config Configs/MyCustom.json
-```
+The stable branch uses optimized defaults for the Z13 Flow 2025. Advanced configuration options are available on the development branch for users who need custom setups.
 
-- Example toggles inside JSON:
-```json
-{
-  "installation": {
-    "dual_boot_mode": "gpt",
-    "kernel_variant": "zen",
-    "default_filesystem": "zfs",
-    "enable_secure_boot": false
-  },
-  "power": {
-    "enable_power_management": true,
-    "default_tdp_profile": "balanced"
-  },
-  "hardware": {
-    "enable_hardware_fixes": true,
-    "enable_180hz_display": true
-  }
-}
-```
+**Current Stable Defaults:**
+- Zen kernel with AMD Strix Halo optimizations
+- ZFS filesystem with compression and snapshots
+- omarchy desktop environment
+- Hardware-specific drivers and power management
+- MediaTek MT7925e WiFi stability fixes
 
-- Custom TDP profiles (concept): define named AC/battery targets and switch via `z13-tdp <name>`.
-
-For deep dives (kernel params, module tuning, services, advanced security), see the project’s developer docs (`Docs/Prompt.md` for agents) or open an issue to request coverage in the user guide.
+For custom configurations or advanced options, please open an issue to discuss your specific needs.
 
 

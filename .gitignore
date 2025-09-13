@@ -74,3 +74,6 @@ logs/
 *.pem
 secrets/
 private/
+# SSH Installation Assistant Prompts
+SSH_INSTALLATION_ASSISTANT_PROMPT.md
+QUICK_SSH_ASSISTANT_PROMPT.md

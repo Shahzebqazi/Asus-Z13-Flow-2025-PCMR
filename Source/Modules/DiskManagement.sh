@@ -116,6 +116,163 @@ validate_partition_exists() {
 	HandleFatalError "$description partition not found: $partition"
 }
 
+# Enhanced EFI partition detection with multiple methods
+detect_efi_partitions() {
+	local disk_device="$1"
+	local efi_candidates=()
+	
+	PrintStatus "Detecting EFI System Partitions on $disk_device..."
+	
+	# Method 1: Check by partition type GUID (most reliable)
+	while IFS= read -r line; do
+		local part_name=$(echo "$line" | awk '{print $1}')
+		local part_type=$(echo "$line" | awk '{print $2}')
+		if [[ "$part_type" =~ ^[cC]12[aA]7328-[fF]81[fF]-11[dD]2-[bB][aA]4[bB]-00[aA]0[cC]93[eE][cC]93[bB]$ ]]; then
+			efi_candidates+=("/dev/$part_name")
+		fi
+	done < <(lsblk -rno NAME,PARTTYPE "$disk_device" 2>/dev/null || true)
+	
+	# Method 2: Check by filesystem type (fallback)
+	if [[ ${#efi_candidates[@]} -eq 0 ]]; then
+		PrintStatus "No EFI partitions found by GUID, checking by filesystem type..."
+		while IFS= read -r line; do
+			local part_name=$(echo "$line" | awk '{print $1}')
+			local fs_type=$(echo "$line" | awk '{print $2}')
+			if [[ "$fs_type" =~ ^(vfat|fat32)$ ]]; then
+				local part_size=$(lsblk -b "/dev/$part_name" -o SIZE --noheadings 2>/dev/null | head -1)
+				local size_mb=$((part_size / 1024 / 1024))
+				# Assume FAT32 partitions >50MB are likely ESP
+				if [[ $size_mb -gt 50 ]]; then
+					efi_candidates+=("/dev/$part_name")
+				fi
+			fi
+		done < <(lsblk -rno NAME,FSTYPE "$disk_device" 2>/dev/null || true)
+	fi
+	
+	# Method 3: Check by mount point (last resort)
+	if [[ ${#efi_candidates[@]} -eq 0 ]]; then
+		PrintStatus "No EFI partitions found by filesystem, checking by mount point..."
+		while IFS= read -r line; do
+			local part_name=$(echo "$line" | awk '{print $1}')
+			local mount_point=$(echo "$line" | awk '{print $2}')
+			if [[ "$mount_point" =~ ^/boot/efi$|^/boot$ ]]; then
+				efi_candidates+=("/dev/$part_name")
+			fi
+		done < <(lsblk -rno NAME,MOUNTPOINT "$disk_device" 2>/dev/null || true)
+	fi
+	
+	echo "${efi_candidates[@]}"
+}
+
+# Validate EFI partition is usable
+validate_efi_partition() {
+	local efi_part="$1"
+	
+	PrintStatus "Validating EFI partition: $efi_part"
+	
+	# Check if partition exists
+	[[ -b "$efi_part" ]] || return 1
+	
+	# Check if it's actually FAT32
+	local fs_type=$(lsblk -rno FSTYPE "$efi_part" 2>/dev/null | head -1)
+	if [[ ! "$fs_type" =~ ^(vfat|fat32)$ ]]; then
+		PrintWarning "EFI partition $efi_part has unexpected filesystem: $fs_type"
+		return 1
+	fi
+	
+	# Check if it's mountable
+	local temp_mount="/tmp/efi_validation_$$"
+	mkdir -p "$temp_mount"
+	if mount "$efi_part" "$temp_mount" 2>/dev/null; then
+		# Check for EFI directory structure
+		if [[ -d "$temp_mount/EFI" ]]; then
+			PrintStatus "EFI partition validated successfully: $efi_part"
+			umount "$efi_part" 2>/dev/null || true
+			rmdir "$temp_mount" 2>/dev/null || true
+			return 0
+		else
+			PrintWarning "EFI partition $efi_part missing EFI directory"
+		fi
+		umount "$efi_part" 2>/dev/null || true
+	else
+		PrintWarning "Cannot mount EFI partition $efi_part"
+	fi
+	rmdir "$temp_mount" 2>/dev/null || true
+	return 1
+}
+
+# Check if EFI partition needs resizing for ZFS
+check_efi_size_for_zfs() {
+	local efi_part="$1"
+	local current_size_mb=$(lsblk -b "$efi_part" -o SIZE --noheadings 2>/dev/null | head -1)
+	current_size_mb=$((current_size_mb / 1024 / 1024))
+	
+	# ZFS requires larger EFI partition due to multiple boot environments
+	local recommended_size_mb=512
+	
+	if [[ $current_size_mb -lt $recommended_size_mb ]]; then
+		PrintWarning "EFI partition size ($current_size_mb MB) may be insufficient for ZFS dual-boot"
+		PrintStatus "Recommended size: ${recommended_size_mb} MB for ZFS with multiple boot environments"
+		echo ""
+		echo "Options:"
+		echo "  1) Continue with current size (may cause issues with ZFS snapshots/boot environments)"
+		echo "  2) Resize EFI partition to ${recommended_size_mb} MB (requires free space after EFI partition)"
+		echo "  3) Abort and resize manually"
+		
+		while true; do
+			read -p "Choose option (1-3): " choice < "$TTY_INPUT" || true
+			case "$choice" in
+				1)
+					PrintStatus "Continuing with current EFI size"
+					return 0
+					;;
+				2)
+					resize_efi_partition "$efi_part" "$recommended_size_mb"
+					return $?
+					;;
+				3)
+					HandleFatalError "Please resize EFI partition manually and restart"
+					;;
+				*)
+					echo "Invalid choice. Please enter 1, 2, or 3."
+					;;
+			esac
+		done
+	else
+		PrintStatus "EFI partition size ($current_size_mb MB) is adequate for ZFS"
+		return 0
+	fi
+}
+
+# Resize EFI partition (requires free space after it)
+resize_efi_partition() {
+	local efi_part="$1"
+	local target_size_mb="$2"
+	local disk_device="$2"
+	
+	PrintStatus "Resizing EFI partition to ${target_size_mb} MB..."
+	
+	# Get current partition number
+	local part_num=$(echo "$efi_part" | sed 's/.*p\([0-9]*\)$/\1/')
+	
+	# Check if there's free space after the EFI partition
+	local next_part_start=$(sgdisk -i "$part_num" "$disk_device" 2>/dev/null | grep "Last sector" | awk '{print $3}')
+	local disk_end=$(sgdisk -E "$disk_device" 2>/dev/null)
+	
+	if [[ $next_part_start -gt 0 && $((next_part_start - 1)) -gt $((target_size_mb * 1024 * 1024 / 512)) ]]; then
+		# Resize the partition
+		sgdisk -d "$part_num" "$disk_device" || return 1
+		sgdisk -n "$part_num:0:+${target_size_mb}M" -t "$part_num:EF00" -c "$part_num:EFI System" "$disk_device" || return 1
+		partprobe "$disk_device"
+		sleep 2
+		PrintStatus "EFI partition resized successfully"
+		return 0
+	else
+		PrintError "Not enough free space after EFI partition to resize"
+		return 1
+	fi
+}
+
 prepare_partitions() {
 	if [[ "$DUAL_BOOT_MODE" == "new" ]]; then
 		PrintStatus "Partitioning disk for fresh install"
@@ -147,8 +304,15 @@ prepare_partitions() {
 		partprobe "$DISK_DEVICE"
 		sleep 2
 		
-		PrintStatus "Creating EFI System Partition (300MB)"
-		sgdisk -n 1:0:+300M -t 1:EF00 -c 1:"EFI System" "$DISK_DEVICE" || HandleFatalError "Failed to create EFI partition"
+		# Determine EFI size based on filesystem choice
+		local efi_size="300M"
+		if [[ "$FILESYSTEM" == "zfs" || "$FILESYSTEM" == "ZFS" ]]; then
+			efi_size="512M"
+			PrintStatus "Using larger EFI partition (512MB) for ZFS support"
+		fi
+		
+		PrintStatus "Creating EFI System Partition ($efi_size)"
+		sgdisk -n 1:0:+$efi_size -t 1:EF00 -c 1:"EFI System" "$DISK_DEVICE" || HandleFatalError "Failed to create EFI partition"
 		
 		PrintStatus "Creating Linux Root Partition"
 		sgdisk -n 2:0:-8G -t 2:8300 -c 2:"Linux Root" "$DISK_DEVICE" || HandleFatalError "Failed to create root partition"
@@ -176,19 +340,90 @@ prepare_partitions() {
 		validate_partition_exists "$SWAP_PART" "Swap"
 	else
 		PrintStatus "Setting up for dual-boot (GPT)"
-		# Detect ESP and pick/create root partition interactively
-		EFI_PART=$(lsblk -rno NAME,PARTTYPE "/dev/$(basename "$DISK_DEVICE")" | awk '/c12a7328-f81f-11d2-ba4b-00a0c93ec93b/{print $1; exit}')
-		if [[ -n "$EFI_PART" ]]; then EFI_PART="/dev/$EFI_PART"; fi
-		if [[ -z "$EFI_PART" ]]; then HandleFatalError "No EFI partition found. Prepare Windows ESP first."; fi
-		echo "Existing partitions on $DISK_DEVICE:"; print_disks
+		PrintStatus "This will preserve your existing Windows installation and EFI partition"
+		echo ""
+		
+		# Enhanced EFI partition detection
+		local efi_candidates=($(detect_efi_partitions "$DISK_DEVICE"))
+		
+		if [[ ${#efi_candidates[@]} -eq 0 ]]; then
+			HandleFatalError "No EFI System Partition found on $DISK_DEVICE. For dual-boot, Windows must be installed first with a proper ESP."
+		elif [[ ${#efi_candidates[@]} -eq 1 ]]; then
+			EFI_PART="${efi_candidates[0]}"
+			PrintStatus "Found EFI partition: $EFI_PART"
+		else
+			PrintStatus "Multiple EFI partitions found:"
+			for i in "${!efi_candidates[@]}"; do
+				local part="${efi_candidates[$i]}"
+				local size=$(lsblk -h "$part" -o SIZE --noheadings 2>/dev/null | head -1)
+				local mount=$(lsblk -rno MOUNTPOINT "$part" 2>/dev/null | head -1)
+				echo "  $((i+1))) $part (${size:-unknown size}) ${mount:+[mounted at $mount]}"
+			done
+			while true; do
+				read -p "Select EFI partition (1-${#efi_candidates[@]}): " choice < "$TTY_INPUT" || true
+				if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 && $choice -le ${#efi_candidates[@]} ]]; then
+					EFI_PART="${efi_candidates[$((choice-1))]}"
+					PrintStatus "Selected EFI partition: $EFI_PART"
+					break
+				else
+					echo "Invalid choice. Please enter a number between 1 and ${#efi_candidates[@]}"
+				fi
+			done
+		fi
+		
+		# Validate the selected EFI partition
+		if ! validate_efi_partition "$EFI_PART"; then
+			PrintError "Selected EFI partition $EFI_PART is not usable"
+			HandleFatalError "Please ensure Windows is properly installed with a valid EFI partition"
+		fi
+		
+		# Check EFI size for ZFS if applicable
+		if [[ "$FILESYSTEM" == "zfs" || "$FILESYSTEM" == "ZFS" ]]; then
+			check_efi_size_for_zfs "$EFI_PART"
+		fi
+		
+		echo ""
+		echo "Existing partitions on $DISK_DEVICE:"
+		print_disks
+		echo ""
+		echo "You need to specify where to install Arch Linux:"
+		echo "  - Choose an unallocated space or existing partition to replace"
+		echo "  - The EFI partition ($EFI_PART) will be shared with Windows"
+		echo "  - GRUB will be installed to the EFI partition for dual-boot support"
+		echo ""
+		
 		while true; do
 			read -p "Enter Linux root partition (e.g., /dev/nvme0n1p5): " ROOT_PART < "$TTY_INPUT" || true
-			[[ -b "$ROOT_PART" ]] && break || echo "Invalid partition"
+			if [[ -b "$ROOT_PART" ]]; then
+				# Check if it's the EFI partition
+				if [[ "$ROOT_PART" == "$EFI_PART" ]]; then
+					echo "Error: Cannot use EFI partition as root partition"
+					continue
+				fi
+				break
+			else
+				echo "Invalid partition. Please enter a valid block device."
+			fi
 		done
+		
+		echo ""
 		read -p "Enter swap partition (optional, blank to skip): " SWAP_PART < "$TTY_INPUT" || true
-		if [[ -n "$SWAP_PART" && ! -b "$SWAP_PART" ]]; then
-			HandleValidationError "Invalid swap partition"
+		if [[ -n "$SWAP_PART" ]]; then
+			if [[ ! -b "$SWAP_PART" ]]; then
+				HandleValidationError "Invalid swap partition: $SWAP_PART"
+			fi
+			if [[ "$SWAP_PART" == "$EFI_PART" ]]; then
+				HandleValidationError "Cannot use EFI partition as swap"
+			fi
+			if [[ "$SWAP_PART" == "$ROOT_PART" ]]; then
+				HandleValidationError "Cannot use root partition as swap"
+			fi
 		fi
+		
+		PrintStatus "Dual-boot configuration:"
+		PrintStatus "  EFI partition: $EFI_PART (shared with Windows)"
+		PrintStatus "  Root partition: $ROOT_PART"
+		[[ -n "$SWAP_PART" ]] && PrintStatus "  Swap partition: $SWAP_PART"
 	fi
 }
 

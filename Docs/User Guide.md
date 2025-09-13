@@ -8,7 +8,7 @@ This guide is for Z13 Flow (2025) with AMD Ryzen Strix Halo. It focuses on the f
 
 2) Run the installer (stable branch):
 ```bash
-curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
+curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/Install_Arch.sh | bash
 ```
 
 - Uses the Zen kernel and optimizations for the Z13.
@@ -20,7 +20,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.s
 Stable uses a single config. If you prefer running with an explicit profile:
 
 ```bash
-./pcmr.sh --config Configs/Zen.json
+./Install_Arch.sh --config Configs/Zen.json
 ```
 
 ## Dual‑Boot Prep on Windows (Recommended)

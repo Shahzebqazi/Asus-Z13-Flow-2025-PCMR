@@ -14,7 +14,7 @@ Choose your installation path:
 ```powershell
 # Download and run in Windows PowerShell
 cd C:\path\to\repo\Windows
-PowerShell -ExecutionPolicy Bypass -File .\Preflight-Checklist.ps1
+PowerShell -ExecutionPolicy Bypass -File .\Preinstall-Check.ps1
 PowerShell -ExecutionPolicy Bypass -File .\Create-Partitions.ps1 -DiskNumber 0 -RootSizeGB 50 -SwapSizeGB 8
 PowerShell -ExecutionPolicy Bypass -File .\Ensure-ESP.ps1 -MinEspMiB 260 -NewEspMiB 300
 ```
@@ -22,7 +22,7 @@ PowerShell -ExecutionPolicy Bypass -File .\Ensure-ESP.ps1 -MinEspMiB 260 -NewEsp
 **Step 2 - Install Arch Linux:**
 ```bash
 # Boot from Arch Linux USB and run:
-curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
+curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/Install_Arch.sh | bash
 ```
 
 ### **Option 2: Fresh Install on New SSD** 🆕💾
@@ -30,7 +30,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.s
 
 ```bash
 # Boot from Arch Linux USB and run:
-curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
+curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/Install_Arch.sh | bash
 ```
 
 ### **Option 3: Remote Assisted Installation** 🌐🤝
@@ -39,7 +39,7 @@ curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.s
 **Step 1 - Boot Z13 and enable SSH:**
 ```bash
 # Boot from Arch Linux USB, connect to WiFi, then run:
-curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash -s -- --ssh-assisted
+curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/Install_Arch.sh | bash -s -- --ssh-assisted
 ```
 
 **Step 2 - Connect from your main machine:**
@@ -103,34 +103,3 @@ tail -f /var/log/pcmr-installer.log
 ---
 
 **Ready to install?** Choose your path above and get started! 🚀
-
-**Want to contribute?** This project uses modern software engineering principles to create a maintainable, scalable installation system. See `Docs/User Guide.md` for user docs and `Docs/Prompt.md` for agent/developer context. Module specs live in `Docs/Modules/`.
-
-## 🪟 Windows Preparation Utilities
-
-Run in an elevated PowerShell in Windows (Administrator):
-
-```powershell
-cd C:\path\to\repo\Windows
-
-# 1) Preflight checks (enhanced with disk health and space validation):
-PowerShell -ExecutionPolicy Bypass -File .\Preflight-Checklist.ps1
-
-# 2) Create Linux partitions from unallocated space:
-PowerShell -ExecutionPolicy Bypass -File .\Create-Partitions.ps1 -DiskNumber 0 -RootSizeGB 50 -SwapSizeGB 8
-
-# 3) Ensure ESP is large enough (safe: creates new ESP; does not move the original):
-PowerShell -ExecutionPolicy Bypass -File .\Ensure-ESP.ps1 -MinEspMiB 260 -NewEspMiB 300 -ShrinkOsMiB 512
-
-# 4) Make Arch USB with Rufus (GUI):
-PowerShell -ExecutionPolicy Bypass -File .\Make-Arch-USB.ps1 -RufusPath C:\Tools\rufus.exe -ISOPath C:\Users\you\Downloads\archlinux.iso
-
-# Or run the orchestrator to do checks + ESP + optional USB:
-PowerShell -ExecutionPolicy Bypass -File .\Create-Arch-USB.ps1 -CreateUSB -RufusPath C:\Tools\rufus.exe -ISOPath C:\Users\you\Downloads\archlinux.iso
-```
-
-Notes:
-- The ESP script creates a new ESP at the end of disk and populates it via `bcdboot`; the original ESP remains as fallback.
-- Rufus is launched with the ISO preselected; complete the GUI steps.
-
-See also: `Docs/User Guide.md` → Windows Preparation and the Arch Wiki on Windows ESP sizing.

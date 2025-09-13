@@ -21,7 +21,7 @@ The ASUS ROG Flow Z13 (2025) with AMD Strix Halo is an incredible machine, but g
 - 🖥️ **Dual Boot**: Keep Windows - perfect dual boot setup
 - 📸 **Snapshots**: Automatic system snapshots for easy recovery
 
-### **Built on Community Knowledge**
+### **Built on Community Knowledge & Enhanced for Reliability**
 This script combines wisdom from:
 - **Level1Techs Community**: Wendell's AMD Strix Halo guide (adapted for Z13 hardware)
 - **Arch Linux Community**: Best practices and hardware support  
@@ -29,15 +29,29 @@ This script combines wisdom from:
 - **Gaming Community**: Steam Deck/ROG Ally optimization techniques
 - **ASUS ROG Community**: Z13-specific drivers and power management
 
-## 🚀 **Quick Start**
+**Recent Reliability Enhancements:**
+- 🛡️ **Comprehensive error handling** - Installation failures now trigger automatic recovery
+- 🔍 **Enhanced validation** - Every step is verified before proceeding to the next
+- 🔧 **Better hardware detection** - Improved AMD Strix Halo and Z13-specific optimizations
+- 💾 **Robust partition management** - Enhanced Windows dual-boot compatibility
+- ⚡ **ZFS improvements** - Better timing and validation for advanced filesystems
 
-**Get the installer (stable):**
+## 🚀 **Quick Start** ⭐ *Recently Enhanced for Maximum Reliability*
+
+**Get the installer (stable - now with enhanced robustness):**
 ```bash
 curl -L https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh | bash
 ```
 
+> **✨ What's New (Latest Update):** 
+> - **Enhanced error recovery** - Installation now handles failures gracefully with automatic rollback
+> - **Better hardware detection** - Improved AMD Strix Halo and Z13-specific optimizations  
+> - **Robust Windows dual-boot** - Enhanced partition management and EFI handling
+> - **ZFS reliability improvements** - Better timing and validation for ZFS installations
+> - **Comprehensive validation** - Each step is now verified before proceeding
+
 - If you have a USB-C Ethernet dongle, keep it handy (in case Wi‑Fi is finicky on the installer).
-- We’ll handle Secure Boot during install; you can leave it off for the USB boot to avoid surprises.
+- We'll handle Secure Boot during install; you can leave it off for the USB boot to avoid surprises.
 
 ### **Automated Installation (Recommended)**
 ```bash
@@ -261,22 +275,35 @@ See `Docs/Troubleshooting Guide.md` for the consolidated troubleshooting guide w
 
 **Want to contribute?** This project uses modern software engineering principles to create a maintainable, scalable installation system. See `Docs/User Guide.md` for user docs and `Docs/Prompt.md` for agent/developer context. Module specs live in `Docs/Modules/`.
 
-## 🪟 Windows Preparation Utility
+## 🪟 Windows Preparation Utilities ⭐ *Enhanced & More Robust*
 
-For dual-boot or when Windows is already installed, use the PowerShell helper to prepare safely:
+For dual-boot or when Windows is already installed, use our enhanced PowerShell utilities to prepare safely:
+
+> **✨ New Features:** Enhanced disk validation, automatic partition creation, and comprehensive error recovery!
 
 ```powershell
 # Run as Administrator in Windows
 cd C:\path\to\repo\Windows
-PowerShell -ExecutionPolicy Bypass -File .\Create-Arch-USB.ps1 -BackupTargetDriveLetter E: -MinEspMiB 260 -NewEspMiB 300
 
-# Optional: launch Rufus with the Arch ISO preselected
-PowerShell -ExecutionPolicy Bypass -File .\Create-Arch-USB.ps1 -CreateUSB -RufusPath C:\Tools\rufus.exe -ISOPath C:\Users\you\Downloads\archlinux.iso
+# 1) Enhanced preinstall checks (now with disk health validation)
+PowerShell -ExecutionPolicy Bypass -File .\Preinstall-Check.ps1
+
+# 2) NEW: Create Linux partitions automatically from unallocated space
+PowerShell -ExecutionPolicy Bypass -File .\Create-Partitions.ps1 -DiskNumber 0 -RootSizeGB 50 -SwapSizeGB 8
+
+# 3) Ensure ESP is large enough (safe method - creates new ESP)
+PowerShell -ExecutionPolicy Bypass -File .\Ensure-ESP.ps1 -MinEspMiB 260 -NewEspMiB 300
+
+# 4) Optional: Create Arch USB with Rufus
+PowerShell -ExecutionPolicy Bypass -File .\Make-Arch-USB.ps1 -RufusPath C:\Tools\rufus.exe -ISOPath C:\Downloads\archlinux.iso
 ```
 
-What it does:
-- Creates a system restore point and optional system image backup (USB/network)
-- Ensures a sufficiently sized EFI partition by creating a new ESP at the end of disk and deploying Windows boot files via `bcdboot` (does not move the original ESP)
-- Optionally launches Rufus to create the Arch USB installer
+**What's Enhanced:**
+- ✅ **Comprehensive disk health checks** - Validates disk integrity before any operations
+- ✅ **Automatic partition creation** - Creates Linux partitions from unallocated space safely  
+- ✅ **Enhanced error recovery** - Automatic rollback if operations fail
+- ✅ **Better space validation** - Ensures sufficient space before proceeding
+- ✅ **Improved EFI handling** - More robust ESP management for dual-boot
+- ✅ **System backup integration** - Creates restore points and optional full backups
 
 See also: `Docs/User Guide.md` → Windows Preparation and the Arch Wiki on Windows ESP sizing.

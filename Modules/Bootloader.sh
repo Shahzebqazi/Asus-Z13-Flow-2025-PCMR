@@ -17,6 +17,26 @@ bootloader_setup() {
         PrintStatus "Installing GRUB for dual-boot"
         pacstrap /mnt grub efibootmgr os-prober || HandleFatalError "Failed to install GRUB"
         arch-chroot /mnt os-prober || true
+        # Ensure correct mount layout: ESP at /boot/EFI, /boot on root FS
+        if [[ -z "$EFI_PART" || ! -b "$EFI_PART" ]]; then
+            EFI_PART=$(lsblk -rno NAME,PARTTYPE | awk '/c12a7328-f81f-11d2-ba4b-00a0c93ec93b/{print "/dev/"$1; exit}')
+        fi
+        [[ -b "$EFI_PART" ]] || HandleFatalError "Unable to determine EFI System Partition"
+
+        # If /mnt/boot is currently the ESP (vfat), move it to /mnt/boot/EFI
+        current_boot_fs=$(findmnt -no FSTYPE /mnt/boot 2>/dev/null || true)
+        if [[ "$current_boot_fs" =~ ^(vfat|fat|fat32)$ ]]; then
+            PrintWarning "/mnt/boot is the ESP; remounting ESP at /mnt/boot/EFI for GRUB layout"
+            umount /mnt/boot || HandleFatalError "Failed to unmount /mnt/boot"
+            mkdir -p /mnt/boot /mnt/boot/EFI
+            mount "$EFI_PART" /mnt/boot/EFI || HandleFatalError "Failed to mount ESP at /boot/EFI"
+        else
+            mkdir -p /mnt/boot/EFI
+            if ! mountpoint -q /mnt/boot/EFI; then
+                mount "$EFI_PART" /mnt/boot/EFI || HandleFatalError "Failed to mount ESP at /boot/EFI"
+            fi
+        fi
+
         # For dual-boot, ESP is mounted at /boot/EFI; keep /boot on root FS for kernels
         arch-chroot /mnt mkdir -p /boot/grub || HandleFatalError "cannot create /boot/grub"
         arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/EFI --bootloader-id=Arch || HandleFatalError "grub-install failed"

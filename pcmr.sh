@@ -626,12 +626,22 @@ OPTIONS:
     --dual-boot-new        Fresh install EFI for new Windows + Arch dual boot
     --zen-kernel           Use zen kernel instead of standard kernel
     --no-tui               Disable TUI; use plain log output
+    --ssh-assisted         Enable SSH for remote assisted installation
+    --network-install      Download latest version and install
+    --local                Force local installation mode
     --help, -h             Show this help message
 
 EXAMPLES:
     $0 --config "$REPO_ROOT/Configs/Zen.json"
     $0 --standard
     $0 --dual-boot-gpt --zen-kernel
+    $0 --ssh-assisted --config "$REPO_ROOT/Configs/Zen.json"
+    $0 --network-install
+
+INSTALLATION MODES:
+    --local                Standard local installation (default)
+    --ssh-assisted         Enable SSH server for remote assistance/monitoring
+    --network-install      Download and run latest stable version
 
 CONFIGURATION:
     The script can load configuration from a file.
@@ -847,10 +857,130 @@ LoadModule() {
     fi
 }
 
+# Function to select installation mode
+SelectInstallationMode() {
+    if [[ -n "$installation_mode" ]]; then
+        PrintStatus "Installation mode preselected: $installation_mode"
+        return
+    fi
+    
+    PrintHeader "Installation Mode Selection"
+    echo "Choose your installation method:"
+    echo ""
+    echo "  1) Local Installation (Standard)"
+    echo "     - Install directly on this machine"
+    echo "     - Full interactive control"
+    echo ""
+    echo "  2) SSH Assisted Installation"
+    echo "     - Enable SSH server for remote monitoring/assistance"
+    echo "     - Allows remote connection during installation"
+    echo "     - Useful for debugging or guided installation"
+    echo ""
+    echo "  3) Network Installation"
+    echo "     - Download and run latest stable version"
+    echo "     - Always uses most up-to-date installer"
+    echo ""
+    
+    local choice
+    while true; do
+        read -p "Enter choice (1-3): " choice < "$TTY_INPUT" || true
+        case "$choice" in
+            1)
+                installation_mode="local"
+                break
+                ;;
+            2)
+                installation_mode="ssh-assisted"
+                break
+                ;;
+            3)
+                installation_mode="network"
+                break
+                ;;
+            *) 
+                echo "Invalid choice. Please enter 1, 2, or 3."
+                ;;
+        esac
+    done
+    
+    PrintStatus "Selected installation mode: $installation_mode"
+}
+
+# Function to setup SSH assisted installation
+SetupSSHAssisted() {
+    PrintHeader "SSH Assisted Installation Setup"
+    
+    # Check if SSH is available
+    if ! command -v sshd >/dev/null 2>&1; then
+        PrintStatus "Installing OpenSSH server..."
+        pacman -Sy --noconfirm openssh || HandleFatalError "Failed to install OpenSSH"
+    fi
+    
+    # Generate host keys if they don't exist
+    if [[ ! -f /etc/ssh/ssh_host_rsa_key ]]; then
+        PrintStatus "Generating SSH host keys..."
+        ssh-keygen -A || HandleFatalError "Failed to generate SSH host keys"
+    fi
+    
+    # Set root password for SSH access
+    PrintStatus "Setting up SSH access..."
+    echo "For SSH access, you need to set a root password:"
+    while true; do
+        echo -n "Enter root password for SSH access: "
+        read -s ssh_password < "$TTY_INPUT" || true
+        echo
+        if [[ ${#ssh_password} -ge 4 ]]; then
+            echo "root:$ssh_password" | chpasswd
+            break
+        else
+            PrintWarning "Password must be at least 4 characters long"
+        fi
+    done
+    
+    # Start SSH service
+    PrintStatus "Starting SSH server..."
+    systemctl start sshd || HandleFatalError "Failed to start SSH server"
+    
+    # Get network information
+    local ip_address=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}' || echo "Unable to determine")
+    
+    PrintStatus "SSH server is now running!"
+    echo ""
+    echo "Connection Information:"
+    echo "  IP Address: $ip_address"
+    echo "  Username: root"
+    echo "  Password: [as set above]"
+    echo ""
+    echo "To connect from another machine:"
+    echo "  ssh root@$ip_address"
+    echo ""
+    echo "You can now monitor or assist with the installation remotely."
+    echo "Press Enter to continue with installation..."
+    read -r < "$TTY_INPUT" || true
+}
+
+# Function to handle network installation
+HandleNetworkInstall() {
+    PrintHeader "Network Installation"
+    PrintStatus "Downloading latest stable installer..."
+    
+    # Download latest version
+    local temp_script="/tmp/pcmr-latest.sh"
+    if curl -L "https://github.com/Shahzebqazi/Asus-Z13-Flow-2025-PCMR/raw/stable/pcmr.sh" -o "$temp_script"; then
+        chmod +x "$temp_script"
+        PrintStatus "Latest installer downloaded successfully"
+        PrintStatus "Executing latest version..."
+        exec "$temp_script" --local "$@"
+    else
+        HandleFatalError "Failed to download latest installer. Check internet connection."
+    fi
+}
+
 # Function to show installation summary
 ShowSummary() {
     PrintHeader "Installation Summary"
     
+    echo "Installation Mode: $installation_mode"
     echo "Configuration:"
     echo "  Dual Boot Mode: ${DUAL_BOOT_MODE:-"Auto-detect"}"
     echo "  Kernel: $([ "$USE_ZEN_KERNEL" == true ] && echo "Zen" || echo "Standard")"
@@ -864,6 +994,10 @@ ShowSummary() {
     if [[ "$DUAL_BOOT_MODE" != "none" ]]; then
         PrintWarning "Dual boot installation will preserve existing Windows installation"
         PrintWarning "Make sure you have backed up important data"
+    fi
+    
+    if [[ "$installation_mode" == "ssh-assisted" ]]; then
+        PrintStatus "SSH server will be enabled for remote assistance"
     fi
     
     echo "Press Enter to continue or Ctrl+C to cancel..."
@@ -1004,6 +1138,7 @@ Main() {
     # Parse command line arguments
     local use_config=false
     local config_file=""
+    local installation_mode=""
     
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -1032,6 +1167,18 @@ Main() {
                 FORCE_NO_TUI=true
                 shift
                 ;;
+            --ssh-assisted)
+                installation_mode="ssh-assisted"
+                shift
+                ;;
+            --network-install)
+                installation_mode="network"
+                shift
+                ;;
+            --local)
+                installation_mode="local"
+                shift
+                ;;
             --help|-h)
                 ShowHelp
                 exit 0
@@ -1043,6 +1190,20 @@ Main() {
                 ;;
         esac
     done
+    
+    # Handle network installation mode early
+    if [[ "$installation_mode" == "network" ]]; then
+        HandleNetworkInstall "$@"
+        exit 0
+    fi
+    
+    # Select installation mode if not specified
+    if [[ -z "$installation_mode" ]]; then
+        SelectInstallationMode
+    fi
+    
+    # Set default if still empty (shouldn't happen but safety check)
+    installation_mode=${installation_mode:-"local"}
     
     # Load default configuration first
     LoadDefaultConfig
@@ -1080,6 +1241,11 @@ Main() {
     
     # Validate prerequisites
     ValidatePrerequisites
+
+    # Setup SSH assisted installation if requested
+    if [[ "$installation_mode" == "ssh-assisted" ]]; then
+        SetupSSHAssisted
+    fi
 
     # Ensure required modules are available
     if [[ ! -f "$MODULES_DIR/DiskManagement.sh" ]]; then
@@ -1124,15 +1290,16 @@ Main() {
         fi
     fi
     
-    # Load and execute installation modules
+    # Load and execute installation modules in correct order
     LoadModule "DiskManagement"
     LoadModule "FilesystemSetup"
     LoadModule "CoreInstallation"
     LoadModule "Bootloader"
+    
     # Optional: ASUS hardware enablement (safe subset)
     if [[ "$ENABLE_HARDWARE_FIXES" == true ]]; then
         if [[ -f "$MODULES_DIR/HardwareEnablement.sh" ]]; then
-            source "$MODULES_DIR/HardwareEnablement.sh"
+            LoadModule "HardwareEnablement"
             HWE_AVAILABLE=true
         else
             HWE_AVAILABLE=false

@@ -3,9 +3,7 @@
 # Core Disk Management for stable branch
 # Sets up disk variables and prompts for Fresh vs Dual-boot
 
-require_cmd() {
-    command -v "$1" >/dev/null 2>&1 || { echo "Missing required command: $1"; exit 1; }
-}
+# Removed require_cmd - using inline command checks instead
 
 print_disks() {
     echo "NAME                                   SIZE  TYPE  FSTYPE  CLASS        MOUNTPOINT"
@@ -119,8 +117,13 @@ validate_partition_exists() {
 prepare_partitions() {
     if [[ "$DUAL_BOOT_MODE" == "new" ]]; then
         PrintStatus "Partitioning disk for fresh install"
-        require_cmd sgdisk
-        require_cmd partprobe
+        
+        # Check required commands
+        for cmd in sgdisk partprobe; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+                HandleFatalError "Required command not found: $cmd"
+            fi
+        done
         
         # Validate disk exists and is not mounted
         [[ -b "$DISK_DEVICE" ]] || HandleFatalError "Disk device not found: $DISK_DEVICE"
@@ -169,10 +172,58 @@ prepare_partitions() {
         validate_partition_exists "$SWAP_PART" "Swap"
     else
         PrintStatus "Setting up for dual-boot (GPT)"
-        # Detect ESP and pick/create root partition interactively
-        EFI_PART=$(lsblk -rno NAME,PARTTYPE "/dev/$(basename "$DISK_DEVICE")" | awk '/c12a7328-f81f-11d2-ba4b-00a0c93ec93b/{print $1; exit}')
-        if [[ -n "$EFI_PART" ]]; then EFI_PART="/dev/$EFI_PART"; fi
-        if [[ -z "$EFI_PART" ]]; then HandleFatalError "No EFI partition found. Prepare Windows ESP first."; fi
+        # Detect ESP with better error handling
+        PrintStatus "Detecting existing EFI System Partition..."
+        local efi_candidates=()
+        
+        # Use lsblk to find EFI partitions
+        while IFS= read -r line; do
+            local part_name=$(echo "$line" | awk '{print $1}')
+            local part_type=$(echo "$line" | awk '{print $2}')
+            if [[ "$part_type" =~ ^[cC]12[aA]7328-[fF]81[fF]-11[dD]2-[bB][aA]4[bB]-00[aA]0[cC]93[eE][cC]93[bB]$ ]]; then
+                efi_candidates+=("/dev/$part_name")
+            fi
+        done < <(lsblk -rno NAME,PARTTYPE "$DISK_DEVICE" 2>/dev/null || true)
+        
+        # Fallback: check by filesystem type
+        if [[ ${#efi_candidates[@]} -eq 0 ]]; then
+            while IFS= read -r line; do
+                local part_name=$(echo "$line" | awk '{print $1}')
+                local fs_type=$(echo "$line" | awk '{print $2}')
+                if [[ "$fs_type" =~ ^(vfat|fat32)$ ]]; then
+                    local part_size=$(lsblk -b "/dev/$part_name" -o SIZE --noheadings 2>/dev/null | head -1)
+                    local size_mb=$((part_size / 1024 / 1024))
+                    # Assume FAT32 partitions >50MB are likely ESP
+                    if [[ $size_mb -gt 50 ]]; then
+                        efi_candidates+=("/dev/$part_name")
+                    fi
+                fi
+            done < <(lsblk -rno NAME,FSTYPE "$DISK_DEVICE" 2>/dev/null || true)
+        fi
+        
+        if [[ ${#efi_candidates[@]} -eq 0 ]]; then
+            HandleFatalError "No EFI System Partition found on $DISK_DEVICE. For dual-boot, Windows must be installed first with a proper ESP."
+        elif [[ ${#efi_candidates[@]} -eq 1 ]]; then
+            EFI_PART="${efi_candidates[0]}"
+            PrintStatus "Found EFI partition: $EFI_PART"
+        else
+            PrintStatus "Multiple EFI partitions found:"
+            for i in "${!efi_candidates[@]}"; do
+                local part="${efi_candidates[$i]}"
+                local size=$(lsblk -h "$part" -o SIZE --noheadings 2>/dev/null | head -1)
+                echo "  $((i+1))) $part (${size:-unknown size})"
+            done
+            while true; do
+                read -p "Select EFI partition (1-${#efi_candidates[@]}): " choice < "$TTY_INPUT" || true
+                if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 && $choice -le ${#efi_candidates[@]} ]]; then
+                    EFI_PART="${efi_candidates[$((choice-1))]}"
+                    PrintStatus "Selected EFI partition: $EFI_PART"
+                    break
+                else
+                    echo "Invalid choice. Please enter a number between 1 and ${#efi_candidates[@]}"
+                fi
+            done
+        fi
         echo "Existing partitions on $DISK_DEVICE:"; print_disks
         while true; do
             read -p "Enter Linux root partition (e.g., /dev/nvme0n1p5): " ROOT_PART < "$TTY_INPUT" || true
@@ -194,26 +245,15 @@ format_partitions() {
         PrintStatus "Preserving existing EFI System Partition at $EFI_PART"
     fi
     
-    # Note: Root filesystem formatting is handled by FilesystemSetup.sh based on $FILESYSTEM variable
-    PrintStatus "Root partition will be formatted by filesystem setup module"
-    
-    if [[ -n "$SWAP_PART" ]]; then 
-        PrintStatus "Creating swap"
-        mkswap "$SWAP_PART" || HandleFatalError "Failed to create swap"
-    fi
+    # Note: Root filesystem formatting and swap setup is handled by FilesystemSetup.sh
+    PrintStatus "Root partition and swap will be formatted by filesystem setup module"
 }
 
 mount_partitions() {
-    PrintStatus "Mounting partitions"
+    PrintStatus "Partition setup complete"
     
-    # Note: Mounting is handled by FilesystemSetup.sh which understands different filesystem types
+    # Note: All mounting is handled by FilesystemSetup.sh which understands different filesystem types
     PrintStatus "Partition mounting will be handled by filesystem setup module"
-    
-    # Just activate swap if created
-    if [[ -n "$SWAP_PART" ]]; then 
-        PrintStatus "Activating swap"
-        swapon "$SWAP_PART" || HandleFatalError "Failed to activate swap"
-    fi
 }
 
 # Entry called by main script

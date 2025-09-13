@@ -4,8 +4,13 @@
 
 CoreInstallation() {
     PrintHeader "Base System Installation"
-    require_cmd pacstrap
-    require_cmd genfstab
+    
+    # Check required commands
+    for cmd in pacstrap genfstab arch-chroot; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            HandleFatalError "Required command not found: $cmd. Please run from Arch Linux live environment."
+        fi
+    done
 
     # Validate mount point
     if ! mountpoint -q /mnt; then

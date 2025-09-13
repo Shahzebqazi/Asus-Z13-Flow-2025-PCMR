@@ -37,56 +37,25 @@ bootloader_setup() {
             fi
         fi
 
-        # Safety checks: verify mount types and ESP free space before grub-install
-        esp_fstype=$(findmnt -no FSTYPE /mnt/boot/EFI 2>/dev/null || true)
-        if [[ -z "$esp_fstype" ]]; then
-            PrintError "/mnt/boot/EFI is not a mountpoint"
-            echo "findmnt -no FSTYPE /mnt/boot:"; findmnt -no FSTYPE /mnt/boot 2>/dev/null || true
-            echo "findmnt -no SOURCE /mnt/boot:"; findmnt -no SOURCE /mnt/boot 2>/dev/null || true
-            echo "findmnt -no SOURCE /mnt/boot/EFI:"; findmnt -no SOURCE /mnt/boot/EFI 2>/dev/null || true
-            echo "lsblk -f:"; lsblk -f || true
-            echo "df -h /mnt/boot /mnt/boot/EFI:"; df -h /mnt/boot /mnt/boot/EFI 2>/dev/null || true
+        # Validate ESP mount and filesystem
+        if ! mountpoint -q /mnt/boot/EFI; then
             HandleFatalError "ESP is not mounted at /mnt/boot/EFI"
         fi
+        
+        local esp_fstype=$(findmnt -no FSTYPE /mnt/boot/EFI 2>/dev/null || true)
         if ! [[ "$esp_fstype" =~ ^(vfat|fat|fat32)$ ]]; then
-            PrintError "ESP at /mnt/boot/EFI has unexpected FSTYPE: $esp_fstype (expected vfat)"
-            echo "findmnt -no FSTYPE /mnt/boot:"; findmnt -no FSTYPE /mnt/boot 2>/dev/null || true
-            echo "findmnt -no SOURCE /mnt/boot:"; findmnt -no SOURCE /mnt/boot 2>/dev/null || true
-            echo "findmnt -no SOURCE /mnt/boot/EFI:"; findmnt -no SOURCE /mnt/boot/EFI 2>/dev/null || true
-            echo "lsblk -f:"; lsblk -f || true
-            echo "df -h /mnt/boot /mnt/boot/EFI:"; df -h /mnt/boot /mnt/boot/EFI 2>/dev/null || true
-            HandleFatalError "Incorrect filesystem for ESP mount"
+            HandleFatalError "ESP has incorrect filesystem type: $esp_fstype (expected vfat/fat32)"
         fi
-        # Require ESP size >= 100MB and at least 10MB free
-        esp_df=$(df -Pm /mnt/boot/EFI 2>/dev/null | awk 'NR==2{print $2" "$4}')
-        esp_size_mb=$(echo "$esp_df" | awk '{print $1}')
-        esp_free_mb=$(echo "$esp_df" | awk '{print $2}')
-        if [[ -n "$esp_size_mb" && "$esp_size_mb" -lt 100 ]]; then
-            PrintError "ESP is too small: ${esp_size_mb}MB (minimum 100MB recommended)"
-            echo "lsblk -f:"; lsblk -f || true
-            HandleFatalError "Insufficient ESP size for GRUB"
-        fi
+        
+        # Check ESP has sufficient space (simplified)
+        local esp_free_mb=$(df -Pm /mnt/boot/EFI 2>/dev/null | awk 'NR==2{print $4}')
         if [[ -n "$esp_free_mb" && "$esp_free_mb" -lt 10 ]]; then
-            PrintError "ESP free space is low: ${esp_free_mb}MB (<10MB). Free up space or resize."
-            echo "df -h /mnt/boot /mnt/boot/EFI:"; df -h /mnt/boot /mnt/boot/EFI 2>/dev/null || true
-            HandleFatalError "Insufficient free space on ESP"
+            HandleFatalError "ESP has insufficient free space: ${esp_free_mb}MB (need at least 10MB)"
         fi
 
-        # For dual-boot, ESP is mounted at /boot/EFI; keep /boot on root FS for kernels
-        arch-chroot /mnt mkdir -p /boot/grub || HandleFatalError "cannot create /boot/grub"
-        set +e
-        arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/EFI --bootloader-id=Arch
-        rc=$?
-        set -e
-        if [[ $rc -ne 0 ]]; then
-            PrintError "grub-install exited with code $rc"
-            echo "findmnt -no FSTYPE /mnt/boot:"; findmnt -no FSTYPE /mnt/boot 2>/dev/null || true
-            echo "findmnt -no SOURCE /mnt/boot:"; findmnt -no SOURCE /mnt/boot 2>/dev/null || true
-            echo "findmnt -no SOURCE /mnt/boot/EFI:"; findmnt -no SOURCE /mnt/boot/EFI 2>/dev/null || true
-            echo "lsblk -f:"; lsblk -f || true
-            echo "df -h /mnt/boot /mnt/boot/EFI:"; df -h /mnt/boot /mnt/boot/EFI 2>/dev/null || true
-            HandleFatalError "grub-install failed"
-        fi
+        # Install GRUB to ESP
+        arch-chroot /mnt mkdir -p /boot/grub || HandleFatalError "Cannot create /boot/grub"
+        arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/EFI --bootloader-id=Arch || HandleFatalError "GRUB installation failed"
         # Ensure os-prober is enabled for GRUB
         if [[ -f /mnt/etc/default/grub ]]; then
             if grep -q '^GRUB_DISABLE_OS_PROBER=' /mnt/etc/default/grub; then
@@ -98,19 +67,7 @@ bootloader_setup() {
             mkdir -p /mnt/etc/default
             echo 'GRUB_DISABLE_OS_PROBER=false' > /mnt/etc/default/grub
         fi
-        set +e
-        arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
-        rc=$?
-        set -e
-        if [[ $rc -ne 0 ]]; then
-            PrintError "grub-mkconfig exited with code $rc"
-            echo "findmnt -no FSTYPE /mnt/boot:"; findmnt -no FSTYPE /mnt/boot 2>/dev/null || true
-            echo "findmnt -no SOURCE /mnt/boot:"; findmnt -no SOURCE /mnt/boot 2>/dev/null || true
-            echo "findmnt -no SOURCE /mnt/boot/EFI:"; findmnt -no SOURCE /mnt/boot/EFI 2>/dev/null || true
-            echo "lsblk -f:"; lsblk -f || true
-            echo "df -h /mnt/boot /mnt/boot/EFI:"; df -h /mnt/boot /mnt/boot/EFI 2>/dev/null || true
-            HandleFatalError "grub-mkconfig failed"
-        fi
+        arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg || HandleFatalError "GRUB configuration generation failed"
     else
         PrintStatus "Installing systemd-boot"
         # Ensure /boot is mounted and systemd is present

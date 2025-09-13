@@ -116,7 +116,10 @@ function Get-UnallocatedSpace([Microsoft.Management.Infrastructure.CimInstance]$
 }
 
 function Test-SufficientSpace([array]$UnallocatedRegions, [int]$RequiredBytes) {
-    $totalUnallocated = ($UnallocatedRegions | Measure-Object -Property Size -Sum).Sum
+    $totalUnallocated = 0
+    foreach ($region in $UnallocatedRegions) {
+        $totalUnallocated += $region.Size
+    }
     return $totalUnallocated -ge $RequiredBytes
 }
 
@@ -125,7 +128,11 @@ function New-LinuxPartitions([Microsoft.Management.Infrastructure.CimInstance]$D
     $totalRequired = $RootSizeBytes + $SwapSizeBytes
     
     if (-not (Test-SufficientSpace -UnallocatedRegions $unallocatedRegions -RequiredBytes $totalRequired)) {
-        $availableGB = [math]::Round((($unallocatedRegions | Measure-Object -Property Size -Sum).Sum) / 1GB, 2)
+        $totalAvailable = 0
+        foreach ($region in $unallocatedRegions) {
+            $totalAvailable += $region.Size
+        }
+        $availableGB = [math]::Round($totalAvailable / 1GB, 2)
         $requiredGB = [math]::Round($totalRequired / 1GB, 2)
         throw "Insufficient unallocated space. Available: ${availableGB}GB, Required: ${requiredGB}GB"
     }
@@ -186,7 +193,11 @@ function Show-PartitionPlan([Microsoft.Management.Infrastructure.CimInstance]$Di
     Write-Info "  Total Required: $($RootSizeGB + $SwapSizeGB)GB"
     
     $unallocatedRegions = Get-UnallocatedSpace -Disk $Disk
-    $totalUnallocatedGB = [math]::Round((($unallocatedRegions | Measure-Object -Property Size -Sum).Sum) / 1GB, 2)
+    $totalUnallocated = 0
+    foreach ($region in $unallocatedRegions) {
+        $totalUnallocated += $region.Size
+    }
+    $totalUnallocatedGB = [math]::Round($totalUnallocated / 1GB, 2)
     Write-Info "  Available Unallocated: ${totalUnallocatedGB}GB"
     
     if ($unallocatedRegions.Count -gt 0) {

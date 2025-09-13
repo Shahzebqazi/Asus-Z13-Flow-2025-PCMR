@@ -47,21 +47,51 @@ function Test-PendingReboot {
 
 function Test-FastStartupEnabled {
     try {
-        $val = (powercfg /a) 2>$null | Select-String -SimpleMatch 'Fast Startup'
-        if ($val) {
-            $hiber = (powercfg /a) 2>$null | Select-String -SimpleMatch 'Hibernation has been disabled'
-            return -not [bool]$hiber
+        # Check registry value for Fast Startup
+        $fastStartupRegPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power'
+        $fastStartupValue = Get-ItemProperty -Path $fastStartupRegPath -Name 'HiberbootEnabled' -ErrorAction SilentlyContinue
+        
+        if ($fastStartupValue) {
+            return $fastStartupValue.HiberbootEnabled -eq 1
         }
+        
+        # Fallback: check powercfg output for hibernation status
+        $powercfgOutput = & powercfg /a 2>$null
+        if ($powercfgOutput) {
+            $hibernationEnabled = $powercfgOutput | Select-String -SimpleMatch 'Hibernation has been enabled'
+            return [bool]$hibernationEnabled
+        }
+        
         return $false
-    } catch { return $false }
+    } catch {
+        Write-Err "Error checking Fast Startup status: $($_.Exception.Message)"
+        return $false
+    }
 }
 
 function Test-UnallocatedSpace([Microsoft.Management.Infrastructure.CimInstance]$Disk, [int]$RequiredMiB) {
     try {
-        $unallocated = Get-Disk -Number $Disk.Number | Get-PartitionSupportedSize
-        $availableMiB = [math]::Round(($unallocated.SizeMax - $unallocated.SizeMin) / 1MB)
-        return $availableMiB -ge $RequiredMiB
+        # Get all partitions on the disk
+        $partitions = Get-Partition -DiskNumber $Disk.Number | Sort-Object Offset
+        
+        # Get disk size in bytes
+        $diskSizeBytes = $Disk.Size
+        
+        # Calculate total allocated space
+        $totalAllocatedBytes = 0
+        foreach ($partition in $partitions) {
+            $totalAllocatedBytes += $partition.Size
+        }
+        
+        # Calculate actual unallocated space
+        $unallocatedBytes = $diskSizeBytes - $totalAllocatedBytes
+        $unallocatedMiB = [math]::Round($unallocatedBytes / 1MB)
+        
+        Write-Info "Disk total: $([math]::Round($diskSizeBytes / 1GB, 2)) GB, Allocated: $([math]::Round($totalAllocatedBytes / 1GB, 2)) GB, Unallocated: $unallocatedMiB MiB"
+        
+        return $unallocatedMiB -ge $RequiredMiB
     } catch {
+        Write-Err "Error calculating unallocated space: $($_.Exception.Message)"
         return $false
     }
 }

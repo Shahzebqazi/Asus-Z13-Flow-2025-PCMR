@@ -929,11 +929,18 @@ SetupSSHAssisted() {
         echo -n "Enter root password for SSH access: "
         read -s ssh_password < "$TTY_INPUT" || true
         echo
-        if [[ ${#ssh_password} -ge 4 ]]; then
-            echo "root:$ssh_password" | chpasswd
-            break
+        if [[ ${#ssh_password} -ge ${MIN_PASSWORD_LENGTH} ]]; then
+            echo -n "Confirm root password for SSH access: "
+            read -s ssh_confirm < "$TTY_INPUT" || true
+            echo
+            if [[ "$ssh_password" == "$ssh_confirm" ]]; then
+                echo "root:$ssh_password" | chpasswd || HandleFatalError "Failed to set SSH password"
+                break
+            else
+                PrintWarning "Passwords do not match"
+            fi
         else
-            PrintWarning "Password must be at least 4 characters long"
+            PrintWarning "Password must be at least ${MIN_PASSWORD_LENGTH} characters long"
         fi
     done
     

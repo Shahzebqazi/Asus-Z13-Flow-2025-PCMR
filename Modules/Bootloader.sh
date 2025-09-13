@@ -43,7 +43,7 @@ bootloader_setup() {
         fi
         
         local esp_fstype=$(findmnt -no FSTYPE /mnt/boot/EFI 2>/dev/null || true)
-        if ! [[ "$esp_fstype" =~ ^(vfat|fat|fat32)$ ]]; then
+        if ! [[ "$esp_fstype" =~ ^(vfat|fat32)$ ]]; then
             HandleFatalError "ESP has incorrect filesystem type: $esp_fstype (expected vfat/fat32)"
         fi
         

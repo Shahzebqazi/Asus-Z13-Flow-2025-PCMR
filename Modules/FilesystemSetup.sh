@@ -101,15 +101,21 @@ setup_zfs_filesystem() {
     # Create mountpoint for EFI
     mkdir -p /mnt/boot
     
-    # Setup swap if specified
-    if [[ -n "$SWAP_PART" ]]; then
-        mkswap "$SWAP_PART" || HandleFatalError "Failed to create swap"
-        swapon "$SWAP_PART" || HandleFatalError "Failed to activate swap"
+    # Mount EFI partition first before setting up swap
+    if [[ -n "$EFI_PART" ]]; then
+        # Unmount if already mounted elsewhere
+        umount "$EFI_PART" 2>/dev/null || true
+        mount "$EFI_PART" /mnt/boot || HandleFatalError "Failed to mount EFI partition"
     fi
     
-    # Mount EFI partition
-    if [[ -n "$EFI_PART" ]]; then
-        mount "$EFI_PART" /mnt/boot || HandleFatalError "Failed to mount EFI partition"
+    # Setup swap if specified
+    if [[ -n "$SWAP_PART" ]]; then
+        if ! swapon --show | grep -q "$SWAP_PART"; then
+            mkswap "$SWAP_PART" || HandleFatalError "Failed to create swap"
+            swapon "$SWAP_PART" || HandleFatalError "Failed to activate swap"
+        else
+            PrintStatus "Swap already active on $SWAP_PART"
+        fi
     fi
 }
 

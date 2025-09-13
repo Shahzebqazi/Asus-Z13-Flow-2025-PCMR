@@ -2,6 +2,14 @@
 
 # Core Installation for stable branch
 
+# Utility function for command validation
+require_cmd() {
+    local cmd="$1"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        HandleFatalError "Required command not found: $cmd. Please run from Arch Linux live environment."
+    fi
+}
+
 CoreInstallation() {
 	PrintHeader "Base System Installation"
 	require_cmd pacstrap

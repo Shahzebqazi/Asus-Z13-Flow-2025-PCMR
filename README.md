@@ -71,7 +71,12 @@ tail -f /var/log/pcmr-installer.log
 - **Boot**: systemd-boot (fresh install) or GRUB (dual-boot)
 - **Security**: Secure Boot enabled for fresh installs, disabled for dual-boot compatibility
 
-**Recent Stability Improvements (v2.0.2):**
+**Recent Stability Improvements (v2.0.3):**
+- 🔴 **CRITICAL FIX**: Resolved major inconsistency between main script and Source directory
+- 🔴 **CRITICAL FIX**: Fixed ZFS configuration mismatch causing unexpected filesystem fallback
+- 🔴 **CRITICAL FIX**: Added missing function dependencies in Source modules
+- 🔴 **CRITICAL FIX**: Enhanced partition validation with proper retry logic
+- 🔴 **CRITICAL FIX**: Improved SSH password validation and confirmation
 - ✅ Fixed critical module loading race conditions
 - ✅ Enhanced EFI partition detection for dual-boot scenarios
 - ✅ Improved filesystem setup error handling and mount validation
